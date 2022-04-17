@@ -24,8 +24,10 @@ x;
 y;
 z;
 
-let obj = { a = 23, b = 
-    { c = 'Hello' } 
+let obj = { 
+    a = 23, 
+    b = { c = 'Hello' },
+    d = ['a', 'b', 'c', 32]
 };
 
 #['test', 1, 2, 3]

@@ -65,6 +65,7 @@ Term: Box<Expr> = {
     <n:Reference> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
     "(" <Expr> ")",
     "{" <o:ShionObject> "}" => Box::new(Expr::ShionObject(o)),
+    "[" <a:Args> "]" => Box::new(Expr::ShionArray(a)),
 };
 
 // SHION
