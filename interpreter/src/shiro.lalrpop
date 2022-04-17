@@ -62,6 +62,18 @@ Term: Box<Expr> = {
     <n:Reference> "(" <args:Args> ")" => Box::new(Expr::Invocation(n, args)),
     <n:Reference> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
     "(" <Expr> ")",
+    "{" <o:ShionObject> "}" => Box::new(Expr::ShionObject(o)),
+};
+
+// SHION
+ShionObject: Vec<Box<Expr>> = {
+    <e:ShionDef> => vec![e],
+    <mut v:ShionObject> "," <e:ShionDef> => { v.push(e); v },
+};
+
+ShionDef: Box<Expr> = {
+    Newline <ShionDef> Newline,
+    <i:Identifier> "=" <e:Expr> => Box::new(Expr::ShionDef(i, e))
 };
 
 // Primitives

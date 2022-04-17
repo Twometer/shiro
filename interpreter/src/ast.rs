@@ -8,6 +8,8 @@ pub enum Expr {
     Op(Box<Expr>, Opcode, Box<Expr>),
     Assignment(Vec<String>, Box<Expr>),
     Invocation(Vec<String>, Vec<Box<Expr>>),
+    ShionObject(Vec<Box<Expr>>),
+    ShionDef(String, Box<Expr>),
 }
 
 #[derive(Debug, PartialEq)]
