@@ -1,0 +1,93 @@
+use std::str::FromStr;
+use crate::ast::{Expr, Opcode};
+
+grammar;
+
+pub Chunk: Vec<Box<Expr>> = {
+    <mut c:Chunk> <l:Line> => { if &*l != &Expr::Nop { c.push(l); } c },
+    <l:Line> => if &*l != &Expr::Nop { vec![l] } else { vec![] }
+};
+
+Line: Box<Expr> = {
+    Newline => Box::new(Expr::Nop),
+    <e:Expr> Newline => e
+};
+
+// Expressions
+Expr: Box<Expr> = {
+    "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
+    <r:Reference> "=" <v:Cmp> => Box::new(Expr::Assignment(r, v)),
+    Cmp
+}
+
+Cmp: Box<Expr> = {
+    Cmp CmpOp Sum => Box::new(Expr::Op(<>)),
+    Sum
+}
+
+CmpOp: Opcode = {
+    "!=" => Opcode::Neq,
+    "==" => Opcode::Eq,
+    ">" => Opcode::Gt,
+    ">=" => Opcode::Gte,
+    "<" => Opcode::Lt,
+    "<=" => Opcode::Lte,
+};
+
+Sum: Box<Expr> = {
+    Sum SumOp Factor => Box::new(Expr::Op(<>)),
+    Factor,
+};
+
+SumOp: Opcode = {
+    "+" => Opcode::Add,
+    "-" => Opcode::Sub,
+};
+
+Factor: Box<Expr> = {
+    Factor FactorOp Term => Box::new(Expr::Op(<>)),
+    Term,
+};
+
+FactorOp: Opcode = {
+    "*" => Opcode::Mul,
+    "/" => Opcode::Div,
+    "%" => Opcode::Mod,
+};
+
+Term: Box<Expr> = {
+    Number => Box::new(Expr::Number(<>)),
+    Str => Box::new(Expr::String(<>)),
+    Reference => Box::new(Expr::Reference(<>)),
+    <n:Reference> "(" <args:Args> ")" => Box::new(Expr::Invocation(n, args)),
+    <n:Reference> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
+    "(" <Expr> ")",
+};
+
+// Primitives
+Args: Vec<Box<Expr>> = {
+    <e:Expr> => vec![e],
+    <mut v:Args> "," <e:Expr> => { v.push(e); v },
+}
+
+Reference: Vec<String> = {
+    <mut c:Reference> "." <i:Identifier> => { c.push(i); c },
+    <i:Identifier> => vec![i],
+};
+
+Number: f32 = {
+    r"[-]{0,1}[0-9]+\.[0-9]+[Ff]" => f32::from_str(&<>[..1]).unwrap(),
+    r"[-]{0,1}[0-9]+" => f32::from_str(<>).unwrap(),
+};
+
+Str: String = {
+    r"'[^']*'" => <>.trim_matches('\'').to_string()
+};
+
+Identifier: String = {
+    r"[A-Za-z_]{1}[A-Za-z0-9_]*" => <>.to_string()
+};
+
+Newline: String = {
+    "¶" => <>.to_string()
+};

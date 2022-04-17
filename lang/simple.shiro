@@ -1,6 +1,22 @@
 # Simple example test file
 
-let x = 16
-let y = 32 * 4 + x
+[# Nested [# 
+
+multiline comments 
+
+#] #]
+
+let x = 69 # Mixed and [# Nested [# comments #] #]
+let y = 16
+x = y == 2 * 3 + 1 - y
+let z = 32 * 4 + x
+x = z
+
+let condition = (let x = 3) != 0
+let str = 'Hello, world!'
 
 print(x)
+
+x
+y
+z
