@@ -1,0 +1,1 @@
+cp -r . ~/.vscode/extensions/shiro-language

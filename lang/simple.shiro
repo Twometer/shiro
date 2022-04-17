@@ -1,0 +1,6 @@
+# Simple example test file
+
+let x = 16
+let y = 32 * 4 + x
+
+print(x)
