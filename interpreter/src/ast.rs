@@ -1,9 +1,11 @@
 #[derive(Debug, PartialEq)]
 pub enum Expr {
     Nop,
+    Null,
     Let(String, Box<Expr>),
     String(String),
     Number(f32),
+    Boolean(bool),
     Reference(Vec<String>),
     Op(Box<Expr>, Opcode, Box<Expr>),
     Assignment(Vec<String>, Box<Expr>),

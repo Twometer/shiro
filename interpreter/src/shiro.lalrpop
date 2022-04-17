@@ -9,8 +9,8 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Line: Box<Expr> = {
-    Newline => Box::new(Expr::Nop),
-    <e:Expr> Newline => e
+    ";" => Box::new(Expr::Nop),
+    <e:Expr> ";" => e
 };
 
 // Expressions
@@ -56,8 +56,10 @@ FactorOp: Opcode = {
 };
 
 Term: Box<Expr> = {
+    "null" => Box::new(Expr::Null),
     Number => Box::new(Expr::Number(<>)),
     Str => Box::new(Expr::String(<>)),
+    Boolean => Box::new(Expr::Boolean(<>)),
     Reference => Box::new(Expr::Reference(<>)),
     <n:Reference> "(" <args:Args> ")" => Box::new(Expr::Invocation(n, args)),
     <n:Reference> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
@@ -72,7 +74,6 @@ ShionObject: Vec<Box<Expr>> = {
 };
 
 ShionDef: Box<Expr> = {
-    Newline <ShionDef> Newline,
     <i:Identifier> "=" <e:Expr> => Box::new(Expr::ShionDef(i, e))
 };
 
@@ -96,10 +97,11 @@ Str: String = {
     r"'[^']*'" => <>.trim_matches('\'').to_string()
 };
 
-Identifier: String = {
-    r"[A-Za-z_]{1}[A-Za-z0-9_]*" => <>.to_string()
+Boolean: bool = {
+    "true" => true,
+    "false" => false,
 };
 
-Newline: String = {
-    "¶" => <>.to_string()
+Identifier: String = {
+    r"[A-Za-z_]{1}[A-Za-z0-9_]*" => <>.to_string()
 };

@@ -63,14 +63,8 @@ pub fn preprocess_code(code: &str) -> String {
         }
 
         if comment_nesting == 0 {
-            if cur == '\n' {
-                result.push('¶')
-            } else {
-                result.push(cur);
-            }
+            result.push(cur);
         }
     }
-
-    result.push('¶');
     result
 }

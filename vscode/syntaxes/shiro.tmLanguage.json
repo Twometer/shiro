@@ -34,7 +34,7 @@
             "patterns": [
                 {
                     "name": "keyword.other.shiro",
-                    "match": "\\b(use|as)\\b"
+                    "match": "\\b(use|as|null)\\b"
                 },
                 {
                     "name": "keyword.control.shiro",
@@ -80,7 +80,7 @@
         "operators": {
             "patterns": [
                 {
-                    "match": "(\\=|\\+|\\-|\\*|\\/|\\+\\+|\\--|<|>|<=|>=|,)",
+                    "match": "(\\=|\\+|\\-|\\*|\\/|\\+\\+|\\--|<|>|<=|>=|,|!=)",
                     "name": "keyword.operator.shiro"
                 }
             ]
