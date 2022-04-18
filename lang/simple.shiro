@@ -22,7 +22,17 @@ test_fun_2();
 print(a, b, c);
 
 for let i = 0; i < 10; i += 1 {
+    fun test() {
+        print(i);
+    }
+
     print('For loop Test!', i);
+    test();
+}
+
+let i = 23;
+while (i -= 1) > 0 {
+    print('While loop test!');
 }
 
 1.0 + 0.5;

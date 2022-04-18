@@ -266,6 +266,21 @@ impl Eval for &Expr {
                 Opcode::Lt => {
                     ShiroValue::Boolean(lhs.eval(scope.clone()) < rhs.eval(scope.clone()))
                 }
+                Opcode::Gt => {
+                    ShiroValue::Boolean(lhs.eval(scope.clone()) > rhs.eval(scope.clone()))
+                }
+                Opcode::Lte => {
+                    ShiroValue::Boolean(lhs.eval(scope.clone()) <= rhs.eval(scope.clone()))
+                }
+                Opcode::Gte => {
+                    ShiroValue::Boolean(lhs.eval(scope.clone()) >= rhs.eval(scope.clone()))
+                }
+                Opcode::Eq => {
+                    ShiroValue::Boolean(lhs.eval(scope.clone()) == rhs.eval(scope.clone()))
+                }
+                Opcode::Neq => {
+                    ShiroValue::Boolean(lhs.eval(scope.clone()) != rhs.eval(scope.clone()))
+                }
                 _ => ShiroValue::Null,
             },
             Expr::AssignOp(lhs, op, rhs) => match op {
@@ -326,10 +341,16 @@ impl Eval for &Expr {
             Expr::For(init_expr, condition_expr, inc_expr, body) => {
                 let new_scope = Rc::new(Scope::new(Some(scope.clone())));
                 init_expr.eval(new_scope.clone());
-                dbg!(&condition_expr);
                 while condition_expr.eval(new_scope.clone()).coerce_boolean() {
                     eval_block(body, new_scope.clone());
                     inc_expr.eval(new_scope.clone());
+                }
+                ShiroValue::Null
+            }
+            Expr::While(condition_expr, body) => {
+                let new_scope = Rc::new(Scope::new(Some(scope.clone())));
+                while condition_expr.eval(new_scope.clone()).coerce_boolean() {
+                    eval_block(body, new_scope.clone());
                 }
                 ShiroValue::Null
             }
