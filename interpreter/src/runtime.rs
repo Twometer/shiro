@@ -354,6 +354,21 @@ impl Eval for &Expr {
                 }
                 ShiroValue::Null
             }
+            Expr::If(branches) => {
+                for branch in branches {
+                    let new_scope = Rc::new(Scope::new(Some(scope.clone())));
+                    match &branch.condition {
+                        Some(c) => {
+                            if c.eval(new_scope.clone()).coerce_boolean() {
+                                return eval_block(&branch.body, new_scope.clone());
+                            }
+                        }
+                        None => return eval_block(&branch.body, new_scope.clone()),
+                    }
+                }
+
+                ShiroValue::Null
+            }
             _ => ShiroValue::Null,
         }
     }

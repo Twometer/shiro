@@ -35,4 +35,14 @@ while (i -= 1) > 0 {
     print('While loop test!');
 }
 
+let a = 6;
+
+if a == 5 {
+    print('is 5!'); 
+} else if a == 6 {
+    print('is 6!'); 
+} else {
+    print('not 5!'); 
+}
+
 1.0 + 0.5;
