@@ -10,6 +10,8 @@ use std::{
 
 use crate::ast::{AssignOpcode, Expr, Opcode};
 
+type NativeFunctionPtr = fn(scope: Rc<Scope>, args: &Vec<Box<Expr>>) -> ShiroValue;
+
 #[derive(Clone)]
 pub enum ShiroValue {
     String(String),
@@ -20,7 +22,7 @@ pub enum ShiroValue {
         args: Vec<String>,
         body: Vec<Box<Expr>>,
     },
-    NativeFunction(fn(scope: Rc<Scope>, args: &Vec<Box<Expr>>) -> ShiroValue),
+    NativeFunction(NativeFunctionPtr),
     Null,
 }
 
@@ -65,7 +67,25 @@ impl ShiroValue {
             ShiroValue::Decimal(v) => v.to_string(),
             ShiroValue::Integer(v) => v.to_string(),
             ShiroValue::Boolean(v) => v.to_string(),
+            ShiroValue::Function { .. } => "[function]".to_string(),
+            ShiroValue::NativeFunction { .. } => "[native function]".to_string(),
             _ => "null".to_string(),
+        }
+    }
+
+    fn coerce_decimal(&self) -> f32 {
+        match self {
+            ShiroValue::String(s) => f32::from_str(s.as_str()).unwrap(),
+            ShiroValue::Decimal(d) => *d,
+            ShiroValue::Integer(d) => *d as f32,
+            ShiroValue::Boolean(d) => {
+                if *d {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
+            _ => 0.0,
         }
     }
 }
@@ -74,9 +94,15 @@ impl Add for ShiroValue {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let lhs = self.coerce_integer();
-        let rhs = rhs.coerce_integer();
-        ShiroValue::Integer(lhs + rhs)
+        match &self {
+            ShiroValue::String(str) => ShiroValue::String(str.to_owned() + &rhs.coerce_string()),
+            ShiroValue::Integer(i) => ShiroValue::Integer(*i + rhs.coerce_integer()),
+            ShiroValue::Boolean(_) => {
+                ShiroValue::Integer(self.coerce_integer() + rhs.coerce_integer())
+            }
+            ShiroValue::Decimal(d) => ShiroValue::Decimal(*d + rhs.coerce_decimal()),
+            _ => ShiroValue::Null,
+        }
     }
 }
 
@@ -84,7 +110,14 @@ impl Sub for ShiroValue {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        todo!()
+        match &self {
+            ShiroValue::Integer(i) => ShiroValue::Integer(*i - rhs.coerce_integer()),
+            ShiroValue::Boolean(_) => {
+                ShiroValue::Integer(self.coerce_integer() - rhs.coerce_integer())
+            }
+            ShiroValue::Decimal(d) => ShiroValue::Decimal(*d - rhs.coerce_decimal()),
+            _ => ShiroValue::Null,
+        }
     }
 }
 
@@ -92,7 +125,14 @@ impl Div for ShiroValue {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        todo!()
+        match &self {
+            ShiroValue::Integer(i) => ShiroValue::Integer(*i / rhs.coerce_integer()),
+            ShiroValue::Boolean(_) => {
+                ShiroValue::Integer(self.coerce_integer() / rhs.coerce_integer())
+            }
+            ShiroValue::Decimal(d) => ShiroValue::Decimal(*d / rhs.coerce_decimal()),
+            _ => ShiroValue::Null,
+        }
     }
 }
 
@@ -100,9 +140,14 @@ impl Mul for ShiroValue {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        let lhs = self.coerce_integer();
-        let rhs = rhs.coerce_integer();
-        ShiroValue::Integer(lhs * rhs)
+        match &self {
+            ShiroValue::Integer(i) => ShiroValue::Integer(*i * rhs.coerce_integer()),
+            ShiroValue::Boolean(_) => {
+                ShiroValue::Integer(self.coerce_integer() * rhs.coerce_integer())
+            }
+            ShiroValue::Decimal(d) => ShiroValue::Decimal(*d * rhs.coerce_decimal()),
+            _ => ShiroValue::Null,
+        }
     }
 }
 
@@ -132,6 +177,9 @@ impl Scope {
     }
     fn put(&self, name: &String, val: ShiroValue) {
         self.vars.borrow_mut().insert(name.to_string(), val);
+    }
+    fn register_native_function(&self, name: &str, ptr: NativeFunctionPtr) {
+        self.put(&name.to_string(), ShiroValue::NativeFunction(ptr));
     }
 }
 
@@ -223,18 +271,15 @@ fn eval_block(block: &Vec<Box<Expr>>, scope: Rc<Scope>) -> ShiroValue {
 
 pub fn evaluate(tree: &Vec<Box<Expr>>) -> ShiroValue {
     let global_scope = Rc::new(Scope::new(None));
-    global_scope.put(
-        &"print".to_string(),
-        ShiroValue::NativeFunction(|scope, args| {
-            let mut str = String::new();
-            for arg in args {
-                str.push_str(arg.eval(scope.clone()).coerce_string().as_str());
-                str.push(' ');
-            }
-            println!("{}", str);
-            ShiroValue::Null
-        }),
-    );
+    global_scope.register_native_function("print", |scope, args| {
+        let mut str = String::new();
+        for arg in args {
+            str.push_str(arg.eval(scope.clone()).coerce_string().as_str());
+            str.push(' ');
+        }
+        println!("{}", str);
+        ShiroValue::Null
+    });
 
     eval_block(tree, global_scope)
 }
