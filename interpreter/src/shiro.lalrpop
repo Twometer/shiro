@@ -8,9 +8,12 @@ pub Chunk: Vec<Box<Expr>> = {
     <l:Stmt> => if &*l != &Expr::Nop { vec![l] } else { vec![] }
 };
 
-Stmt: Box<Expr> = { 
+Stmt: Box<Expr> = {
+    "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), args, b)),
+    "fun" <name:Identifier> "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), vec![], b)), 
     "while" <e:Expr> "{" <c:Chunk> "}" => Box::new(Expr::While(e, c)),
     "for" <i:Expr> ";" <c:Expr> ";" <a:Expr> "{" <b:Chunk> "}" => Box::new(Expr::For(i, c, a, b)),
+    "return" <retval:Expr> ";" => Box::new(Expr::Return(retval)),
     <br:IfBranches> => Box::new(Expr::If(br)),
     ";" => Box::new(Expr::Nop),
     <e:Expr> ";" => e
@@ -18,6 +21,8 @@ Stmt: Box<Expr> = {
 
 // Expressions
 Expr: Box<Expr> = {
+    "fun" "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(None, args, b)),
+    "fun" "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(None, vec![], b)),
     "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
     <r:Reference> "+=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Add, v)),
     <r:Reference> "-=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Sub, v)),
@@ -99,6 +104,11 @@ ShionDef: Box<Expr> = {
 Args: Vec<Box<Expr>> = {
     <e:Expr> => vec![e],
     <mut v:Args> "," <e:Expr> => { v.push(e); v },
+}
+
+ArgsDef: Vec<String> = {
+    <mut c:ArgsDef> "," <i:Identifier> => { c.push(i); c },
+    <i:Identifier> => vec![i],
 }
 
 Reference: Vec<String> = {

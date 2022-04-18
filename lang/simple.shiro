@@ -51,4 +51,12 @@ for let i = 0; i < 10; i += 1 {
     ;
 }
 
+fun test_function(a, b, c) {
+    ;
+}
+
+let test_fun = fun () {
+    return 23;
+};
+
 #['test', 1, 2, 3]

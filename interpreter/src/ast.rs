@@ -18,6 +18,8 @@ pub enum Expr {
     If(Vec<Box<IfBranch>>),
     While(Box<Expr>, Vec<Box<Expr>>),
     For(Box<Expr>, Box<Expr>, Box<Expr>, Vec<Box<Expr>>),
+    Fun(Option<String>, Vec<String>, Vec<Box<Expr>>),
+    Return(Box<Expr>),
 }
 
 #[derive(Debug, PartialEq)]
