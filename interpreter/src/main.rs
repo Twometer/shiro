@@ -12,9 +12,9 @@ fn main() {
     let code = fs::read_to_string("../lang/simple.shiro").unwrap();
     let preprocessed = preprocess_code(code.as_str());
     match shiro::ChunkParser::new().parse(&preprocessed.as_str()) {
-        Ok(mut ast) => {
-            //dbg!(&ast);
-            runtime::evaluate(&mut ast);
+        Ok(ast) => {
+            let retval = runtime::evaluate(&ast);
+            dbg!(&retval);
         }
         Err(e) => eprintln!("{}", e),
     }

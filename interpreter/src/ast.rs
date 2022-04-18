@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
     Nop,
     Null,
@@ -23,14 +23,14 @@ pub enum Expr {
     Use(Vec<String>, String),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AssignOpcode {
     Eq,
     Add,
     Sub,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Opcode {
     Add,
     Sub,
@@ -45,7 +45,7 @@ pub enum Opcode {
     Lte,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IfBranch {
     pub condition: Option<Box<Expr>>,
     pub body: Vec<Box<Expr>>,

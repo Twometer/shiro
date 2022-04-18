@@ -3,7 +3,22 @@ let b = 2;
 let c = 2 * a + b;
 print(c);
 
+let test_fun = fun() {
+    a = 4;
+    a;
+};
+
+fun test_fun_2() {
+    ;
+}
+
 print('----');
 b = (c = 64);
 print(c);
 print(b);
+test_fun();
+test_fun_2();
+
+print(a, b, c);
+
+1;
