@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
     cmp::min,
+    cmp::Ordering::{Equal, Greater, Less},
     collections::HashMap,
     ops::{Add, Div, Mul, Sub},
     panic,
@@ -88,6 +89,18 @@ impl ShiroValue {
             _ => 0.0,
         }
     }
+
+    fn coerce_boolean(&self) -> bool {
+        match self {
+            ShiroValue::String(s) => !s.is_empty(),
+            ShiroValue::Decimal(d) => *d != 0.0,
+            ShiroValue::Integer(i) => *i != 0,
+            ShiroValue::Boolean(b) => *b,
+            ShiroValue::Function { .. } => true,
+            ShiroValue::NativeFunction { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 impl Add for ShiroValue {
@@ -151,6 +164,51 @@ impl Mul for ShiroValue {
     }
 }
 
+impl PartialEq for ShiroValue {
+    fn eq(&self, other: &Self) -> bool {
+        match &self {
+            ShiroValue::String(str) => *str == other.coerce_string(),
+            ShiroValue::Integer(i) => *i == other.coerce_integer(),
+            ShiroValue::Boolean(b) => *b == other.coerce_boolean(),
+            ShiroValue::Decimal(d) => *d == other.coerce_decimal(),
+            // TODO: function equality
+            _ => false,
+        }
+    }
+}
+
+impl PartialOrd for ShiroValue {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match &self {
+            ShiroValue::String(str) => Some(str.cmp(&other.coerce_string())),
+            ShiroValue::Integer(i) => Some(i.cmp(&other.coerce_integer())),
+            ShiroValue::Boolean(b) => Some(b.cmp(&other.coerce_boolean())),
+            ShiroValue::Decimal(d) => d.partial_cmp(&other.coerce_decimal()),
+            _ => None,
+        }
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Less))
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        // Pattern `Some(Less | Eq)` optimizes worse than negating `None | Some(Greater)`.
+        // FIXME: The root cause was fixed upstream in LLVM with:
+        // https://github.com/llvm/llvm-project/commit/9bad7de9a3fb844f1ca2965f35d0c2a3d1e11775
+        // Revert this workaround once support for LLVM 12 gets dropped.
+        !matches!(self.partial_cmp(other), None | Some(Greater))
+    }
+
+    fn gt(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Greater))
+    }
+
+    fn ge(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Greater | Equal))
+    }
+}
+
 #[derive(Debug)]
 pub struct Scope {
     parent: Option<Rc<Scope>>,
@@ -205,6 +263,9 @@ impl Eval for &Expr {
                 Opcode::Sub => lhs.eval(scope.clone()) - rhs.eval(scope.clone()),
                 Opcode::Mul => lhs.eval(scope.clone()) * rhs.eval(scope.clone()),
                 Opcode::Div => lhs.eval(scope.clone()) / rhs.eval(scope.clone()),
+                Opcode::Lt => {
+                    ShiroValue::Boolean(lhs.eval(scope.clone()) < rhs.eval(scope.clone()))
+                }
                 _ => ShiroValue::Null,
             },
             Expr::AssignOp(lhs, op, rhs) => match op {
@@ -214,7 +275,16 @@ impl Eval for &Expr {
                     scope.put(name, new_val.clone());
                     new_val
                 }
-                _ => ShiroValue::Null,
+                AssignOpcode::Add => {
+                    let val = scope.find(lhs) + rhs.eval(scope.clone());
+                    scope.put(lhs.last().unwrap(), val.clone());
+                    val
+                }
+                AssignOpcode::Sub => {
+                    let val = scope.find(lhs) - rhs.eval(scope.clone());
+                    scope.put(lhs.last().unwrap(), val.clone());
+                    val
+                }
             },
             Expr::Fun(name, args, body) => {
                 let shiro_fun = ShiroValue::Function {
@@ -251,6 +321,17 @@ impl Eval for &Expr {
                         );
                     }
                 }
+            }
+            Expr::Return(expr) => expr.eval(scope),
+            Expr::For(init_expr, condition_expr, inc_expr, body) => {
+                let new_scope = Rc::new(Scope::new(Some(scope.clone())));
+                init_expr.eval(new_scope.clone());
+                dbg!(&condition_expr);
+                while condition_expr.eval(new_scope.clone()).coerce_boolean() {
+                    eval_block(body, new_scope.clone());
+                    inc_expr.eval(new_scope.clone());
+                }
+                ShiroValue::Null
             }
             _ => ShiroValue::Null,
         }
