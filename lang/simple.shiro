@@ -6,7 +6,7 @@ multiline comments
 
 #] #]
 
-let x = 69; # Mixed and [# Nested [# comments #] #]
+let x = 69.0; # Mixed and [# Nested [# comments #] #]
 let y = 16;
 x = y == 2 * 3 + 1 - y;
 let z = 32 * 4 + x;
@@ -29,5 +29,7 @@ let obj = {
     b = { c = 'Hello' },
     d = ['a', 'b', 'c', 32]
 };
+
+let arr_idx = obj.d[0];
 
 #['test', 1, 2, 3]
