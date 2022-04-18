@@ -119,7 +119,6 @@ impl Scope {
             vars: RefCell::new(HashMap::new()),
         }
     }
-    // TODO: Traverse scope upwards
     fn find(&self, name: &Vec<String>) -> ShiroValue {
         let local_name = name.last().expect("Invalid identifier");
         if !self.vars.borrow().contains_key(local_name) {
@@ -186,7 +185,7 @@ impl Eval for &Expr {
                 let target = scope.find(name);
                 match target {
                     ShiroValue::Function { args, body } => {
-                        let new_scope = Scope::new(scope.parent.clone());
+                        let new_scope = Scope::new(Some(scope.clone()));
                         let matching_arg_num = min(in_args.len(), args.len());
                         for i in 0..matching_arg_num {
                             let arg_key = &args[i];

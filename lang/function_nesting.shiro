@@ -1,0 +1,16 @@
+fun test2() {
+    fun sub() {
+        print('Sub 2 called');
+    }
+    sub();
+}
+
+fun test1() {
+    fun sub() {
+        print('Sub 1 called');
+    }
+    sub();
+}
+
+test1();
+test2();
