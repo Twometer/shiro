@@ -3,7 +3,7 @@ use std::{
     cmp::min,
     cmp::Ordering::{Equal, Greater, Less},
     collections::HashMap,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, Div, Mul, Rem, Sub},
     panic,
     rc::Rc,
     str::FromStr,
@@ -25,6 +25,7 @@ pub enum ShiroValue {
     },
     NativeFunction(NativeFunctionPtr),
     Null,
+    HeapRef(u32),
 }
 
 impl std::fmt::Debug for ShiroValue {
@@ -39,7 +40,8 @@ impl std::fmt::Debug for ShiroValue {
                 .field("args", args)
                 .field("body", body)
                 .finish(),
-            Self::NativeFunction(_) => f.debug_tuple("NativeFunction").finish(),
+            Self::NativeFunction(_) => write!(f, "NativeFunction"),
+            Self::HeapRef(addr) => f.debug_tuple("HeapRef").field(addr).finish(),
             Self::Null => write!(f, "Null"),
         }
     }
@@ -70,6 +72,7 @@ impl ShiroValue {
             ShiroValue::Boolean(v) => v.to_string(),
             ShiroValue::Function { .. } => "[function]".to_string(),
             ShiroValue::NativeFunction { .. } => "[native function]".to_string(),
+            ShiroValue::HeapRef(_) => "[object]".to_string(),
             _ => "null".to_string(),
         }
     }
@@ -164,6 +167,19 @@ impl Mul for ShiroValue {
     }
 }
 
+impl Rem for ShiroValue {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        match &self {
+            ShiroValue::Integer(i) => ShiroValue::Integer(*i % rhs.coerce_integer()),
+            ShiroValue::Decimal(d) => ShiroValue::Decimal(*d % rhs.coerce_decimal()),
+            ShiroValue::Boolean(_) => ShiroValue::Integer(self.coerce_integer()),
+            _ => ShiroValue::Null,
+        }
+    }
+}
+
 impl PartialEq for ShiroValue {
     fn eq(&self, other: &Self) -> bool {
         match &self {
@@ -223,7 +239,7 @@ impl Scope {
         }
     }
     fn find(&self, name: &Vec<String>) -> ShiroValue {
-        let local_name = name.last().expect("Invalid identifier");
+        let local_name = name.first().expect("Invalid identifier");
         if !self.vars.borrow().contains_key(local_name) {
             match &self.parent {
                 Some(parent) => parent.find(name),
@@ -263,6 +279,7 @@ impl Eval for &Expr {
                 Opcode::Sub => lhs.eval(scope.clone()) - rhs.eval(scope.clone()),
                 Opcode::Mul => lhs.eval(scope.clone()) * rhs.eval(scope.clone()),
                 Opcode::Div => lhs.eval(scope.clone()) / rhs.eval(scope.clone()),
+                Opcode::Mod => lhs.eval(scope.clone()) % rhs.eval(scope.clone()),
                 Opcode::Lt => {
                     ShiroValue::Boolean(lhs.eval(scope.clone()) < rhs.eval(scope.clone()))
                 }
@@ -281,7 +298,6 @@ impl Eval for &Expr {
                 Opcode::Neq => {
                     ShiroValue::Boolean(lhs.eval(scope.clone()) != rhs.eval(scope.clone()))
                 }
-                _ => ShiroValue::Null,
             },
             Expr::AssignOp(lhs, op, rhs) => match op {
                 AssignOpcode::Eq => {

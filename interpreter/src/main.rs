@@ -1,4 +1,5 @@
 pub mod ast;
+mod heap;
 mod preproc;
 mod runtime;
 
