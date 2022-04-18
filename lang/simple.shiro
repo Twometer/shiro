@@ -32,4 +32,16 @@ let obj = {
 
 let arr_idx = obj.d[0];
 
+
+if arr_idx == 'a' {
+    print('If statement');
+} else if (arr_idx == 'b') {
+    print('Elseif statement');
+} else {
+    print('Else statement');
+
+    let nested_obj = { a = 23 };
+}
+
+
 #['test', 1, 2, 3]

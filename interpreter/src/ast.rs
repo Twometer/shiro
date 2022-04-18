@@ -15,6 +15,7 @@ pub enum Expr {
     ShionObject(Vec<Box<Expr>>),
     ShionArray(Vec<Box<Expr>>),
     ShionDef(String, Box<Expr>),
+    If(Vec<Box<IfBranch>>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -30,4 +31,10 @@ pub enum Opcode {
     Gte,
     Lt,
     Lte,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct IfBranch {
+    pub condition: Option<Box<Expr>>,
+    pub body: Vec<Box<Expr>>,
 }

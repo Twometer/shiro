@@ -1,14 +1,15 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Opcode};
+use crate::ast::{Expr, Opcode, IfBranch};
 
 grammar;
 
 pub Chunk: Vec<Box<Expr>> = {
-    <mut c:Chunk> <l:Line> => { if &*l != &Expr::Nop { c.push(l); } c },
-    <l:Line> => if &*l != &Expr::Nop { vec![l] } else { vec![] }
+    <mut c:Chunk> <l:Stmt> => { if &*l != &Expr::Nop { c.push(l); } c },
+    <l:Stmt> => if &*l != &Expr::Nop { vec![l] } else { vec![] }
 };
 
-Line: Box<Expr> = {
+Stmt: Box<Expr> = { 
+    <br:IfBranches> => Box::new(Expr::If(br)),
     ";" => Box::new(Expr::Nop),
     <e:Expr> ";" => e
 };
@@ -18,6 +19,16 @@ Expr: Box<Expr> = {
     "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
     <r:Reference> "=" <v:Cmp> => Box::new(Expr::Assignment(r, v)),
     Cmp
+}
+
+IfBranches: Vec<Box<IfBranch>> = {
+    "if" <e:IfBlock> => vec![e],
+    <mut v:IfBranches> "else if" <e:IfBlock> => { v.push(e); v },
+    <mut v:IfBranches> "else" "{" <b:Chunk> "}" => { v.push(Box::new(IfBranch{ condition: None, body: b })); v },
+}
+
+IfBlock: Box<IfBranch> = {
+    <c:Expr> "{" <b:Chunk> "}" => Box::new(IfBranch{ condition:Some(c), body:b }),
 }
 
 Cmp: Box<Expr> = {
