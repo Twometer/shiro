@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Opcode, IfBranch};
+use crate::ast::{Expr, Opcode, IfBranch, AssignOpcode};
 
 grammar;
 
@@ -9,6 +9,8 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Stmt: Box<Expr> = { 
+    "while" <e:Expr> "{" <c:Chunk> "}" => Box::new(Expr::While(e, c)),
+    "for" <i:Expr> ";" <c:Expr> ";" <a:Expr> "{" <b:Chunk> "}" => Box::new(Expr::For(i, c, a, b)),
     <br:IfBranches> => Box::new(Expr::If(br)),
     ";" => Box::new(Expr::Nop),
     <e:Expr> ";" => e
@@ -17,7 +19,9 @@ Stmt: Box<Expr> = {
 // Expressions
 Expr: Box<Expr> = {
     "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
-    <r:Reference> "=" <v:Cmp> => Box::new(Expr::Assignment(r, v)),
+    <r:Reference> "+=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Add, v)),
+    <r:Reference> "-=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Sub, v)),
+    <r:Reference> "=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Eq, v)),
     Cmp
 }
 

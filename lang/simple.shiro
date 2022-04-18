@@ -43,5 +43,12 @@ if arr_idx == 'a' {
     let nested_obj = { a = 23 };
 }
 
+while arr_idx {
+    print('test');
+}
+
+for let i = 0; i < 10; i += 1 {
+    ;
+}
 
 #['test', 1, 2, 3]

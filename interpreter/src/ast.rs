@@ -9,13 +9,22 @@ pub enum Expr {
     Boolean(bool),
     Reference(Vec<String>),
     IndexedReference(Vec<String>, Box<Expr>),
+    AssignOp(Vec<String>, AssignOpcode, Box<Expr>),
     Op(Box<Expr>, Opcode, Box<Expr>),
-    Assignment(Vec<String>, Box<Expr>),
     Invocation(Vec<String>, Vec<Box<Expr>>),
     ShionObject(Vec<Box<Expr>>),
     ShionArray(Vec<Box<Expr>>),
     ShionDef(String, Box<Expr>),
     If(Vec<Box<IfBranch>>),
+    While(Box<Expr>, Vec<Box<Expr>>),
+    For(Box<Expr>, Box<Expr>, Box<Expr>, Vec<Box<Expr>>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum AssignOpcode {
+    Eq,
+    Add,
+    Sub,
 }
 
 #[derive(Debug, PartialEq)]
