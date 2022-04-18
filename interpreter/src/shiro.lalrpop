@@ -9,6 +9,7 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Stmt: Box<Expr> = {
+    "use" <lib:Reference> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
     "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), args, b)),
     "fun" <name:Identifier> "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), vec![], b)), 
     "while" <e:Expr> "{" <c:Chunk> "}" => Box::new(Expr::While(e, c)),

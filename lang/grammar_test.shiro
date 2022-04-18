@@ -1,3 +1,5 @@
+use std.io as io;
+
 # Simple example test file
 
 [# Nested [# 
@@ -60,3 +62,4 @@ let test_fun = fun () {
 };
 
 #['test', 1, 2, 3]
+

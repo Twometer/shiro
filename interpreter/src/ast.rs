@@ -20,6 +20,7 @@ pub enum Expr {
     For(Box<Expr>, Box<Expr>, Box<Expr>, Vec<Box<Expr>>),
     Fun(Option<String>, Vec<String>, Vec<Box<Expr>>),
     Return(Box<Expr>),
+    Use(Vec<String>, String),
 }
 
 #[derive(Debug, PartialEq)]
