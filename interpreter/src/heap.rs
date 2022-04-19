@@ -12,6 +12,9 @@ impl HeapObject {
     pub fn address(&self) -> u32 {
         return self.address;
     }
+    pub fn put(&mut self, key: &String, val: ShiroValue) {
+        self.value.insert(key.to_string(), val);
+    }
 }
 
 #[derive(Debug)]

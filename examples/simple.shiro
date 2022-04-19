@@ -45,6 +45,6 @@ if a == 5 {
     print('not 5!'); 
 }
 
-let test_obj = { a = 3 };
+let test_obj = { a = { b = 3 } };
 
 1.0 + 0.5;
