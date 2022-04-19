@@ -29,6 +29,21 @@ pub enum ShiroValue {
     HeapRef(u32),
 }
 
+impl std::fmt::Display for ShiroValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ShiroValue::String(_) => write!(f, "String"),
+            ShiroValue::Integer(_) => write!(f, "Integer"),
+            ShiroValue::Decimal(_) => write!(f, "Decimal"),
+            ShiroValue::Boolean(_) => write!(f, "Boolean"),
+            ShiroValue::Function { .. } => write!(f, "Function"),
+            ShiroValue::NativeFunction(_) => write!(f, "Function"),
+            ShiroValue::Null => write!(f, "Null"),
+            ShiroValue::HeapRef(_) => write!(f, "Object"),
+        }
+    }
+}
+
 impl std::fmt::Debug for ShiroValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -102,6 +117,8 @@ impl ShiroValue {
             ShiroValue::Boolean(b) => *b,
             ShiroValue::Function { .. } => true,
             ShiroValue::NativeFunction { .. } => true,
+            ShiroValue::HeapRef(_) => true,
+
             _ => false,
         }
     }
@@ -247,7 +264,20 @@ impl Scope {
                 _ => ShiroValue::Null,
             }
         } else {
-            self.vars.borrow()[local_name].clone()
+            let var = self.vars.borrow()[local_name].clone();
+            let is_heap_ref = matches!(var, ShiroValue::HeapRef(addr));
+            if !is_heap_ref && name.len() > 1 {
+                panic!(
+                    "Cannot access property '{}' of type {}",
+                    name.get(1).unwrap(),
+                    var
+                );
+            } else if is_heap_ref && name.len() > 1 {
+                // TODO we do sum indexin
+                var
+            } else {
+                var
+            }
         }
     }
     fn put(&self, name: &String, val: ShiroValue) {
@@ -437,6 +467,7 @@ pub fn evaluate(tree: &Vec<Box<Expr>>) -> ShiroValue {
 
     let mut heap = Heap::new();
     let r = eval_block(tree, global_scope, &mut heap);
+    heap.gc();
     dbg!(&heap);
     r
 }

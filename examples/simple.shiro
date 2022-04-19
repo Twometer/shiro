@@ -47,4 +47,7 @@ if a == 5 {
 
 let test_obj = { a = { b = 3 } };
 
+print(test_obj);
+print(test_obj.a.b);
+
 1.0 + 0.5;

@@ -44,7 +44,7 @@ impl Heap {
         self.objects.insert(addr, obj.clone());
         obj
     }
-    fn gc(&mut self) {
+    pub fn gc(&mut self) {
         // TODO
     }
 }
