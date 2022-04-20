@@ -249,6 +249,12 @@ pub struct Scope {
     vars: RefCell<HashMap<String, ShiroValue>>,
 }
 
+impl Drop for Scope {
+    fn drop(&mut self) {
+        // todo release all heaprefs
+    }
+}
+
 impl Scope {
     fn new(parent: Option<Rc<Scope>>) -> Scope {
         Scope {
@@ -256,28 +262,14 @@ impl Scope {
             vars: RefCell::new(HashMap::new()),
         }
     }
-    fn find(&self, name: &Vec<String>) -> ShiroValue {
-        let local_name = name.first().expect("Invalid identifier");
-        if !self.vars.borrow().contains_key(local_name) {
+    fn find(&self, name: &String) -> ShiroValue {
+        if !self.vars.borrow().contains_key(name) {
             match &self.parent {
                 Some(parent) => parent.find(name),
                 _ => ShiroValue::Null,
             }
         } else {
-            let var = self.vars.borrow()[local_name].clone();
-            let is_heap_ref = matches!(var, ShiroValue::HeapRef(addr));
-            if !is_heap_ref && name.len() > 1 {
-                panic!(
-                    "Cannot access property '{}' of type {}",
-                    name.get(1).unwrap(),
-                    var
-                );
-            } else if is_heap_ref && name.len() > 1 {
-                // TODO we do sum indexin
-                var
-            } else {
-                var
-            }
+            self.vars.borrow()[name].clone()
         }
     }
     fn put(&self, name: &String, val: ShiroValue) {
@@ -292,6 +284,34 @@ trait Eval {
     fn eval(self, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue;
 }
 
+fn get_value(name: &Vec<String>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
+    let mut val = scope.find(&name.first().expect("Invalid identifier"));
+
+    for p in name.iter().skip(1) {
+        if let ShiroValue::HeapRef(addr) = val {
+            let heap_obj = heap.deref(addr);
+            val = heap_obj.borrow().get(p);
+        } else {
+            panic!(
+                "Cannot access property '{}' of type {}",
+                name.get(1).unwrap(),
+                val
+            );
+        }
+    }
+
+    val
+}
+
+fn set_value(name: &Vec<String>, val: ShiroValue, scope: Rc<Scope>, heap: &mut Heap) {
+    if name.len() == 1 {
+        scope.put(name.first().unwrap(), val);
+    } else {
+        let val = scope.find(&name.first().expect("Invalid identifier"));
+    }
+    // TODO
+}
+
 impl Eval for &Expr {
     fn eval(self, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
         match self {
@@ -304,7 +324,7 @@ impl Eval for &Expr {
                 scope.put(name, result.clone());
                 result
             }
-            Expr::Reference(name) => scope.find(name).clone(),
+            Expr::Reference(name) => get_value(name, scope, heap).clone(),
             Expr::Op(lhs, op, rhs) => match op {
                 Opcode::Add => lhs.eval(scope.clone(), heap) + rhs.eval(scope.clone(), heap),
                 Opcode::Sub => lhs.eval(scope.clone(), heap) - rhs.eval(scope.clone(), heap),
@@ -338,13 +358,13 @@ impl Eval for &Expr {
                     new_val
                 }
                 AssignOpcode::Add => {
-                    let val = scope.find(lhs) + rhs.eval(scope.clone(), heap);
-                    scope.put(lhs.last().unwrap(), val.clone());
+                    let val = get_value(lhs, scope.clone(), heap) + rhs.eval(scope.clone(), heap);
+                    set_value(lhs, val.clone(), scope.clone(), heap);
                     val
                 }
                 AssignOpcode::Sub => {
-                    let val = scope.find(lhs) - rhs.eval(scope.clone(), heap);
-                    scope.put(lhs.last().unwrap(), val.clone());
+                    let val = get_value(lhs, scope.clone(), heap) - rhs.eval(scope.clone(), heap);
+                    set_value(lhs, val.clone(), scope, heap);
                     val
                 }
             },
@@ -362,7 +382,7 @@ impl Eval for &Expr {
                 }
             }
             Expr::Invocation(name, in_args) => {
-                let target = scope.find(name);
+                let target = get_value(name, scope.clone(), heap);
                 match target {
                     ShiroValue::Function { args, body } => {
                         let new_scope = Scope::new(Some(scope.clone()));
@@ -378,7 +398,7 @@ impl Eval for &Expr {
                     ShiroValue::NativeFunction(body) => body(scope, heap, in_args),
                     _ => {
                         panic!(
-                            "Cannot call non-function reference {:?} of type {:?}",
+                            "Cannot call non-function reference {:?} of type {}",
                             name, target
                         );
                     }
