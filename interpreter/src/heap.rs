@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{alloc::dealloc, cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::runtime::ShiroValue;
 
@@ -6,7 +6,6 @@ use crate::runtime::ShiroValue;
 pub struct HeapObject {
     address: u32,
     value: HashMap<String, ShiroValue>,
-    references: u32,
 }
 
 impl HeapObject {
@@ -36,16 +35,7 @@ impl Heap {
     }
     pub fn deref(&self, address: u32) -> Rc<RefCell<HeapObject>> {
         let obj = self.objects[&address].clone();
-        obj.borrow_mut().references += 1;
         obj
-    }
-    pub fn return_ref(&self, address: u32) {
-        let obj = self.objects[&address].clone();
-        let mut obj = obj.borrow_mut();
-        if obj.references == 0 {
-            panic!("References imbalanced");
-        }
-        obj.references -= 1;
     }
     pub fn alloc(&mut self) -> Rc<RefCell<HeapObject>> {
         let addr = self.addr_ctr;
@@ -54,12 +44,16 @@ impl Heap {
         let obj = Rc::new(RefCell::new(HeapObject {
             address: addr,
             value: HashMap::new(),
-            references: 0,
         }));
         self.objects.insert(addr, obj.clone());
         obj
     }
     pub fn gc(&mut self) {
-        // TODO
+        self.objects.retain(|addr, obj| {
+            let ct = Rc::strong_count(&obj);
+            println!("[gc] #{} has {} references", addr, ct);
+            ct > 1
+        });
+        // TODO cycle detection
     }
 }

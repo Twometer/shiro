@@ -292,24 +292,34 @@ fn get_value(name: &Vec<String>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValu
             let heap_obj = heap.deref(addr);
             val = heap_obj.borrow().get(p);
         } else {
-            panic!(
-                "Cannot access property '{}' of type {}",
-                name.get(1).unwrap(),
-                val
-            );
+            panic!("Cannot read property '{}' of type {}", p, val);
         }
     }
 
     val
 }
 
-fn set_value(name: &Vec<String>, val: ShiroValue, scope: Rc<Scope>, heap: &mut Heap) {
+fn set_value(name: &Vec<String>, new_val: ShiroValue, scope: Rc<Scope>, heap: &mut Heap) {
+    let local_name = name.first().expect("Invalid identifier");
     if name.len() == 1 {
-        scope.put(name.first().unwrap(), val);
+        scope.put(local_name, new_val);
     } else {
-        let val = scope.find(&name.first().expect("Invalid identifier"));
+        let mut val = scope.find(local_name);
+        let mut obj = None;
+
+        for i in 0..name.len() - 1 {
+            let p = &name[i];
+            if let ShiroValue::HeapRef(addr) = val {
+                let heap_obj = heap.deref(addr);
+                val = heap_obj.borrow().get(p);
+                obj = Some(heap_obj);
+            } else {
+                panic!("Cannot write property '{}' of type {}", p, val);
+            }
+        }
+
+        obj.unwrap().borrow_mut().put(name.last().unwrap(), new_val);
     }
-    // TODO
 }
 
 impl Eval for &Expr {
@@ -325,6 +335,11 @@ impl Eval for &Expr {
                 result
             }
             Expr::Reference(name) => get_value(name, scope, heap).clone(),
+            Expr::IndexedReference(name, idx) => {
+                let mut new_name = name.clone();
+                new_name.push(idx.eval(scope.clone(), heap).coerce_string());
+                get_value(&new_name, scope, heap)
+            }
             Expr::Op(lhs, op, rhs) => match op {
                 Opcode::Add => lhs.eval(scope.clone(), heap) + rhs.eval(scope.clone(), heap),
                 Opcode::Sub => lhs.eval(scope.clone(), heap) - rhs.eval(scope.clone(), heap),
@@ -352,9 +367,8 @@ impl Eval for &Expr {
             },
             Expr::AssignOp(lhs, op, rhs) => match op {
                 AssignOpcode::Eq => {
-                    let name = lhs.last().unwrap();
                     let new_val = rhs.eval(scope.clone(), heap);
-                    scope.put(name, new_val.clone());
+                    set_value(lhs, new_val.clone(), scope.clone(), heap);
                     new_val
                 }
                 AssignOpcode::Add => {

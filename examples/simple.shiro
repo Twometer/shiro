@@ -49,5 +49,10 @@ let test_obj = { a = { b = 3 } };
 
 print(test_obj);
 print(test_obj.a.b);
+test_obj.a.b += 2;
+print(test_obj.a['b']);
+
+test_obj.f = 23;
+print(test_obj.f);
 
 1.0 + 0.5;
