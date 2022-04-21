@@ -1,4 +1,4 @@
-use std::{alloc::dealloc, cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::runtime::ShiroValue;
 
@@ -16,7 +16,7 @@ impl HeapObject {
         self.value.insert(key.to_string(), val);
     }
     pub fn get(&self, key: &String) -> ShiroValue {
-        self.value[key].clone()
+        self.value.get(key).unwrap_or(&ShiroValue::Null).clone()
     }
 }
 

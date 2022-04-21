@@ -307,7 +307,7 @@ fn set_value(name: &Vec<String>, new_val: ShiroValue, scope: Rc<Scope>, heap: &m
         let mut val = scope.find(local_name);
         let mut obj = None;
 
-        for i in 0..name.len() - 1 {
+        for i in 1..name.len() {
             let p = &name[i];
             if let ShiroValue::HeapRef(addr) = val {
                 let heap_obj = heap.deref(addr);

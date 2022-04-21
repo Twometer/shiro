@@ -54,5 +54,6 @@ print(test_obj.a['b']);
 
 test_obj.f = 23;
 print(test_obj.f);
+print(test_obj.a.c);
 
 1.0 + 0.5;
