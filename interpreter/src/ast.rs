@@ -7,9 +7,8 @@ pub enum Expr {
     Integer(i32),
     Decimal(f32),
     Boolean(bool),
-    Reference(Vec<String>),
-    IndexedReference(Vec<String>, Box<Expr>),
-    AssignOp(Vec<String>, AssignOpcode, Box<Expr>),
+    Reference(Reference),
+    AssignOp(Reference, AssignOpcode, Box<Expr>),
     Op(Box<Expr>, Opcode, Box<Expr>),
     Invocation(Vec<String>, Vec<Box<Expr>>),
     ShionObject(Vec<Box<Expr>>),
@@ -24,10 +23,19 @@ pub enum Expr {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum Reference {
+    Regular(Vec<String>),
+    Indexed(Vec<String>, Box<Expr>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum AssignOpcode {
     Eq,
     Add,
     Sub,
+    Mul,
+    Div,
+    Mod,
 }
 
 #[derive(Debug, PartialEq, Clone)]

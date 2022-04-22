@@ -9,7 +9,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::ast::{AssignOpcode, Expr, Opcode};
+use crate::ast::{AssignOpcode, Expr, Opcode, Reference};
 use crate::heap::Heap;
 
 type NativeFunctionPtr = fn(scope: Rc<Scope>, heap: &mut Heap, args: &Vec<Box<Expr>>) -> ShiroValue;
@@ -322,6 +322,17 @@ fn set_value(name: &Vec<String>, new_val: ShiroValue, scope: Rc<Scope>, heap: &m
     }
 }
 
+fn ref_to_string(r: &Reference, scope: Rc<Scope>, heap: &mut Heap) -> Vec<String> {
+    match &r {
+        Reference::Regular(name) => name.clone(),
+        Reference::Indexed(name, idx) => {
+            let mut new_name = name.clone();
+            new_name.push(idx.eval(scope.clone(), heap).coerce_string());
+            new_name
+        }
+    }
+}
+
 impl Eval for &Expr {
     fn eval(self, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
         match self {
@@ -334,12 +345,11 @@ impl Eval for &Expr {
                 scope.put(name, result.clone());
                 result
             }
-            Expr::Reference(name) => get_value(name, scope, heap).clone(),
-            Expr::IndexedReference(name, idx) => {
-                let mut new_name = name.clone();
-                new_name.push(idx.eval(scope.clone(), heap).coerce_string());
-                get_value(&new_name, scope, heap)
+            Expr::Reference(r) => {
+                let ref_str = &ref_to_string(r, scope.clone(), heap);
+                get_value(ref_str, scope.clone(), heap)
             }
+
             Expr::Op(lhs, op, rhs) => match op {
                 Opcode::Add => lhs.eval(scope.clone(), heap) + rhs.eval(scope.clone(), heap),
                 Opcode::Sub => lhs.eval(scope.clone(), heap) - rhs.eval(scope.clone(), heap),
@@ -365,23 +375,46 @@ impl Eval for &Expr {
                     lhs.eval(scope.clone(), heap) != rhs.eval(scope.clone(), heap),
                 ),
             },
-            Expr::AssignOp(lhs, op, rhs) => match op {
-                AssignOpcode::Eq => {
-                    let new_val = rhs.eval(scope.clone(), heap);
-                    set_value(lhs, new_val.clone(), scope.clone(), heap);
-                    new_val
+            Expr::AssignOp(lhs, op, rhs) => {
+                let ref_str = &ref_to_string(lhs, scope.clone(), heap);
+                match op {
+                    AssignOpcode::Eq => {
+                        let new_val = rhs.eval(scope.clone(), heap);
+                        set_value(ref_str, new_val.clone(), scope.clone(), heap);
+                        new_val
+                    }
+                    AssignOpcode::Add => {
+                        let val =
+                            get_value(ref_str, scope.clone(), heap) + rhs.eval(scope.clone(), heap);
+                        set_value(ref_str, val.clone(), scope.clone(), heap);
+                        val
+                    }
+                    AssignOpcode::Sub => {
+                        let val =
+                            get_value(ref_str, scope.clone(), heap) - rhs.eval(scope.clone(), heap);
+                        set_value(ref_str, val.clone(), scope, heap);
+                        val
+                    }
+                    AssignOpcode::Mul => {
+                        let val =
+                            get_value(ref_str, scope.clone(), heap) * rhs.eval(scope.clone(), heap);
+                        set_value(ref_str, val.clone(), scope, heap);
+                        val
+                    }
+                    AssignOpcode::Div => {
+                        let val =
+                            get_value(ref_str, scope.clone(), heap) / rhs.eval(scope.clone(), heap);
+                        set_value(ref_str, val.clone(), scope, heap);
+                        val
+                    }
+                    AssignOpcode::Mod => {
+                        let val =
+                            get_value(ref_str, scope.clone(), heap) % rhs.eval(scope.clone(), heap);
+                        set_value(ref_str, val.clone(), scope, heap);
+                        val
+                    }
                 }
-                AssignOpcode::Add => {
-                    let val = get_value(lhs, scope.clone(), heap) + rhs.eval(scope.clone(), heap);
-                    set_value(lhs, val.clone(), scope.clone(), heap);
-                    val
-                }
-                AssignOpcode::Sub => {
-                    let val = get_value(lhs, scope.clone(), heap) - rhs.eval(scope.clone(), heap);
-                    set_value(lhs, val.clone(), scope, heap);
-                    val
-                }
-            },
+            }
             Expr::Fun(name, args, body) => {
                 let shiro_fun = ShiroValue::Function {
                     args: args.clone(),
@@ -467,6 +500,18 @@ impl Eval for &Expr {
                     } else {
                         panic!("Expected ShionDef got {:?}", def);
                     }
+                }
+                ShiroValue::HeapRef(addr)
+            }
+            Expr::ShionArray(items) => {
+                let obj = heap.alloc();
+                let mut obj_mut = obj.borrow_mut();
+                let addr = obj_mut.address();
+                let mut idx = 0;
+                for itm in items {
+                    let val = itm.eval(scope.clone(), heap);
+                    obj_mut.put(&idx.to_string(), val);
+                    idx += 1;
                 }
                 ShiroValue::HeapRef(addr)
             }

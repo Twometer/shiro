@@ -56,4 +56,8 @@ test_obj.f = 23;
 print(test_obj.f);
 print(test_obj.a.c);
 
+let test_arr = ['a', 'b', 'c'];
+test_arr[0] = 2;
+print(test_arr[0]);
+
 1.0 + 0.5;

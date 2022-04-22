@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Opcode, IfBranch, AssignOpcode};
+use crate::ast::{Expr, Opcode, IfBranch, AssignOpcode, Reference};
 
 grammar;
 
@@ -9,7 +9,7 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Stmt: Box<Expr> = {
-    "use" <lib:Reference> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
+    "use" <lib:IdentifierChain> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
     "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), args, b)),
     "fun" <name:Identifier> "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), vec![], b)), 
     "while" <e:Expr> "{" <c:Chunk> "}" => Box::new(Expr::While(e, c)),
@@ -27,9 +27,18 @@ Expr: Box<Expr> = {
     "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
     <r:Reference> "+=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Add, v)),
     <r:Reference> "-=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Sub, v)),
+    <r:Reference> "*=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Mul, v)),
+    <r:Reference> "/=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Div, v)),
+    <r:Reference> "%=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Mod, v)),
     <r:Reference> "=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Eq, v)),
     Cmp
 }
+
+Reference: Reference = {
+    <r:IdentifierChain> => Reference::Regular(r),
+    <r:IdentifierChain> "[" <idx:Expr> "]" => Reference::Indexed(r, idx)
+}
+
 
 IfBranches: Vec<Box<IfBranch>> = {
     "if" <e:IfBlock> => vec![e],
@@ -82,10 +91,10 @@ Term: Box<Expr> = {
     Decimal => Box::new(Expr::Decimal(<>)),
     Str => Box::new(Expr::String(<>)),
     Boolean => Box::new(Expr::Boolean(<>)),
-    Reference => Box::new(Expr::Reference(<>)),
-    <n:Reference> "(" <args:Args> ")" => Box::new(Expr::Invocation(n, args)),
-    <n:Reference> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
-    <r:Reference> "[" <i:Expr> "]" => Box::new(Expr::IndexedReference(r, i)),
+    IdentifierChain => Box::new(Expr::Reference(Reference::Regular(<>))),
+    <n:IdentifierChain> "(" <args:Args> ")" => Box::new(Expr::Invocation(n, args)),
+    <n:IdentifierChain> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
+    <r:IdentifierChain> "[" <i:Expr> "]" => Box::new(Expr::Reference(Reference::Indexed(r, i))),
     "(" <Expr> ")",
     "{" <o:ShionObject> "}" => Box::new(Expr::ShionObject(o)),
     "[" <a:Args> "]" => Box::new(Expr::ShionArray(a)),
@@ -112,8 +121,8 @@ ArgsDef: Vec<String> = {
     <i:Identifier> => vec![i],
 }
 
-Reference: Vec<String> = {
-    <mut c:Reference> "." <i:Identifier> => { c.push(i); c },
+IdentifierChain: Vec<String> = {
+    <mut c:IdentifierChain> "." <i:Identifier> => { c.push(i); c },
     <i:Identifier> => vec![i],
 };
 
