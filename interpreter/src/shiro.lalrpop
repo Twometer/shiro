@@ -9,7 +9,6 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Stmt: Box<Expr> = {
-    "pub" <expr:Expr> ";" => Box::new(Expr::Pub(expr)),
     "use" <lib:Str> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
     "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), args, b)),
     "fun" <name:Identifier> "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), vec![], b)), 

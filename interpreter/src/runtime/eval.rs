@@ -1,4 +1,4 @@
-use std::{cmp::min, rc::Rc};
+use std::{cmp::min, fs, rc::Rc};
 
 use crate::{
     ast::{AssignOpcode, Expr, Opcode, Reference},
@@ -76,7 +76,12 @@ impl Eval for &Expr {
                 let ref_str = &ref_to_string(r, scope.clone(), heap);
                 get_value(ref_str, scope.clone(), heap)
             }
-
+            Expr::Use(path, name) => {
+                let str = fs::read_to_string(path).expect("Could not find module");
+                let imported_obj = eval_code(&str, heap);
+                scope.put(name, imported_obj);
+                ShiroValue::Null
+            }
             Expr::Op(lhs, op, rhs) => match op {
                 Opcode::Add => lhs.eval(scope.clone(), heap) + rhs.eval(scope.clone(), heap),
                 Opcode::Sub => lhs.eval(scope.clone(), heap) - rhs.eval(scope.clone(), heap),
@@ -264,7 +269,7 @@ fn eval_block(block: &Vec<Box<Expr>>, scope: Rc<Scope>, heap: &mut Heap) -> Shir
     retval
 }
 
-fn eval_tree(tree: &Vec<Box<Expr>>) -> ShiroValue {
+fn eval_tree(tree: &Vec<Box<Expr>>, heap: &mut Heap) -> ShiroValue {
     let global_scope = Rc::new(Scope::new(None));
     global_scope.register_native_function("print", |scope, heap, args| {
         let mut str = String::new();
@@ -276,17 +281,22 @@ fn eval_tree(tree: &Vec<Box<Expr>>) -> ShiroValue {
         ShiroValue::Null
     });
 
-    let mut heap = Heap::new();
-    let r = eval_block(tree, global_scope, &mut heap);
-    heap.gc();
-    dbg!(&heap);
-    r
+    let result = eval_block(tree, global_scope, heap);
+    result
+}
+
+fn eval_code(code: &String, heap: &mut Heap) -> ShiroValue {
+    let preprocessed = preprocess_code(code.as_str());
+    match shiro::ChunkParser::new().parse(&preprocessed.as_str()) {
+        Ok(ast) => eval_tree(&ast, heap),
+        Err(e) => panic!("Parser failed: {}", e),
+    }
 }
 
 pub fn eval(code: &String) -> ShiroValue {
-    let preprocessed = preprocess_code(code.as_str());
-    match shiro::ChunkParser::new().parse(&preprocessed.as_str()) {
-        Ok(ast) => eval_tree(&ast),
-        Err(e) => panic!("Parser failed: {}", e),
-    }
+    let mut heap = Heap::new();
+    let result = eval_code(code, &mut heap);
+    heap.gc();
+    dbg!(&heap);
+    result
 }

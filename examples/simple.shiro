@@ -1,6 +1,10 @@
-use 'std/io' as io;
+#use 'std/io' as io;
+use '../examples/example_lib.shiro' as example;
 
-pub {};
+for let i = 0; i < 4; i+=1 {
+    example.test();
+}
+
 
 let a = 1;
 let b = 2;

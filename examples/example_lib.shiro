@@ -1,0 +1,10 @@
+let y = 23;
+
+print('Hello from submodule');
+
+return {
+    test = fun() {
+        y += 1;
+        print(y);
+    }
+};
