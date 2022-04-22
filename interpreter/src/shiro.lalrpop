@@ -9,7 +9,8 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Stmt: Box<Expr> = {
-    "use" <lib:IdentifierChain> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
+    "pub" <expr:Expr> ";" => Box::new(Expr::Pub(expr)),
+    "use" <lib:Str> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
     "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), args, b)),
     "fun" <name:Identifier> "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), vec![], b)), 
     "while" <e:Expr> "{" <c:Chunk> "}" => Box::new(Expr::While(e, c)),
@@ -96,6 +97,8 @@ Term: Box<Expr> = {
     <n:IdentifierChain> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
     <r:IdentifierChain> "[" <i:Expr> "]" => Box::new(Expr::Reference(Reference::Indexed(r, i))),
     "(" <Expr> ")",
+    "{" "}" =>  Box::new(Expr::ShionObject(vec![])),
+    "[" "]" =>  Box::new(Expr::ShionArray(vec![])),
     "{" <o:ShionObject> "}" => Box::new(Expr::ShionObject(o)),
     "[" <a:Args> "]" => Box::new(Expr::ShionArray(a)),
 };

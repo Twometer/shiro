@@ -1,1 +1,1 @@
-cp -r . ~/.vscode/extensions/shiro-language
+cp -r * ~/.vscode/extensions/shiro-language -Force
