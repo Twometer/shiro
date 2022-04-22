@@ -23,6 +23,7 @@ pub enum ShiroValue {
     Function {
         args: Vec<String>,
         body: Vec<Box<Expr>>,
+        scope: Rc<Scope>,
     },
     NativeFunction(NativeFunctionPtr),
     Null,
@@ -51,7 +52,7 @@ impl std::fmt::Debug for ShiroValue {
             Self::Integer(arg0) => f.debug_tuple("Integer").field(arg0).finish(),
             Self::Decimal(arg0) => f.debug_tuple("Decimal").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
-            Self::Function { args, body } => f
+            Self::Function { args, body, .. } => f
                 .debug_struct("Function")
                 .field("args", args)
                 .field("body", body)
@@ -419,6 +420,7 @@ impl Eval for &Expr {
                 let shiro_fun = ShiroValue::Function {
                     args: args.clone(),
                     body: body.clone(),
+                    scope: scope.clone(),
                 };
                 match name {
                     Some(name) => {
@@ -431,8 +433,12 @@ impl Eval for &Expr {
             Expr::Invocation(name, in_args) => {
                 let target = get_value(name, scope.clone(), heap);
                 match target {
-                    ShiroValue::Function { args, body } => {
-                        let new_scope = Scope::new(Some(scope.clone()));
+                    ShiroValue::Function {
+                        args,
+                        body,
+                        scope: fun_scope,
+                    } => {
+                        let new_scope = Scope::new(Some(fun_scope.clone()));
                         let matching_arg_num = min(in_args.len(), args.len());
                         for i in 0..matching_arg_num {
                             let arg_key = &args[i];
