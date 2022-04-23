@@ -1,1 +1,2 @@
-pub mod io;
+mod io;
+pub use self::io::lib as io;

@@ -48,7 +48,7 @@ impl NativeLibProvider {
 impl Default for NativeLibProvider {
     fn default() -> Self {
         let mut provider = Self::new();
-        provider.register_lib("@std/io", stdlib::io::lib);
+        provider.register_lib("@std/io", stdlib::io);
         provider
     }
 }
