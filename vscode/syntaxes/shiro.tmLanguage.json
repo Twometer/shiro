@@ -34,7 +34,7 @@
             "patterns": [
                 {
                     "name": "keyword.other.shiro",
-                    "match": "\\b(use|as|null)\\b"
+                    "match": "\\b(typeof|append|len|keys|dbg|use|as|null)\\b"
                 },
                 {
                     "name": "keyword.control.shiro",

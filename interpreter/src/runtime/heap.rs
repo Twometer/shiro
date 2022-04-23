@@ -59,6 +59,20 @@ impl HeapObject {
         }
     }
 
+    pub fn len(&self) -> usize {
+        match &self.value {
+            HeapValue::Array(vec) => vec.len(),
+            HeapValue::Object(map) => map.len(),
+        }
+    }
+
+    pub fn keys(&self) -> Vec<String> {
+        match &self.value {
+            HeapValue::Array(vec) => panic!("Cannot get keys of array"),
+            HeapValue::Object(map) => map.keys().map(|k| k.to_string()).collect(),
+        }
+    }
+
     pub fn get(&self, key: &ShiroValue) -> ShiroValue {
         match &self.value {
             HeapValue::Object(map) => map

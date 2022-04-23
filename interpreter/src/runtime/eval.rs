@@ -1,4 +1,4 @@
-use std::{cmp::min, fs, rc::Rc};
+use std::{any::Any, cmp::min, fs, rc::Rc};
 
 use crate::{
     ast::{AssignOpcode, Expr, Opcode, Reference},
@@ -301,6 +301,56 @@ fn eval_tree(tree: &Vec<Box<Expr>>, ctx: &mut RunContext) -> ShiroValue {
             let val = args.first().unwrap().eval(scope, ctx);
             ShiroValue::String(val.type_string())
         }
+    });
+    global_scope.register_native_function("append", |args, scope, ctx| {
+        assert!(args.len() == 2);
+        let dst = args[0].eval(scope.clone(), ctx);
+        if let ShiroValue::HeapRef(array_addr) = dst {
+            let array = ctx.heap.deref(array_addr);
+            let mut array = array.borrow_mut();
+            let value = args[1].eval(scope.clone(), ctx);
+            array.try_push(value);
+        } else {
+            panic!("Cannot append to value of type {}", dst.type_string());
+        }
+        ShiroValue::Null
+    });
+    global_scope.register_native_function("len", |args, scope, ctx| {
+        assert!(args.len() == 1);
+        let dst = args[0].eval(scope.clone(), ctx);
+        if let ShiroValue::HeapRef(array_addr) = dst {
+            let obj = ctx.heap.deref(array_addr);
+            let obj = obj.borrow_mut();
+            return ShiroValue::Integer(obj.len() as i32);
+        } else {
+            panic!("Cannot get length of value of type {}", dst.type_string());
+        }
+    });
+    global_scope.register_native_function("keys", |args, scope, ctx| {
+        assert!(args.len() == 1);
+
+        let dst = args[0].eval(scope.clone(), ctx);
+        if let ShiroValue::HeapRef(array_addr) = dst {
+            let obj = ctx.heap.deref(array_addr);
+            let obj = obj.borrow();
+
+            let result_arr = ctx.heap.alloc_array();
+            let mut result_arr = result_arr.borrow_mut();
+
+            for i in obj.keys() {
+                result_arr.try_push(ShiroValue::String(i));
+            }
+
+            return ShiroValue::HeapRef(result_arr.address());
+        } else {
+            panic!("Cannot get length of value of type {}", dst.type_string());
+        }
+    });
+    global_scope.register_native_function("dbg", |args, scope, ctx| {
+        for arg in args {
+            println!("[dbg] {:?} = {:?}", arg, arg.eval(scope.clone(), ctx));
+        }
+        ShiroValue::Null
     });
 
     eval_block(tree, global_scope, ctx)

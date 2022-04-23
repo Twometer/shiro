@@ -8,6 +8,7 @@ use '../examples/function_nesting' as fnnest;
 log.info('Hello, world!');
 
 let start = time.millis();
+dbg(log['info']);
 
 let native_result = io.hello_native();
 io.println(native_result);
@@ -84,6 +85,17 @@ test_arr[0] = 2;
 io.println(test_arr[0]);
 
 let end = time.millis();
+
+
+let array = ['1', '2'];
+append(array, 3);
+io.println(array[0], array[1], array[2], array[3]);
+io.println('len = ' + len(array));
+
+let io_keys = keys(io);
+for let i = 0; i < len(io_keys); i += 1 {
+    io.println('found key: ' + io_keys[i]);
+}
 
 
 io.println('The code ran to completion in ' + (end - start) + 'ms.');
