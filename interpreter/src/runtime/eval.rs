@@ -5,7 +5,10 @@ use crate::{
     shiro,
 };
 
-use super::{heap::Heap, preproc::preprocess_code, scope::Scope, value::ShiroValue};
+use super::{
+    heap::Heap, native::NativeLibProvider, preproc::preprocess_code, scope::Scope,
+    value::ShiroValue,
+};
 
 fn get_value(name: &Vec<ShiroValue>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
     let mut val = scope.get_by_val(&name.first().expect("Invalid identifier"));
@@ -15,7 +18,11 @@ fn get_value(name: &Vec<ShiroValue>, scope: Rc<Scope>, heap: &mut Heap) -> Shiro
             let heap_obj = heap.deref(addr);
             val = heap_obj.borrow().get(p);
         } else {
-            panic!("Cannot read property '{}' of type {}", p, val);
+            panic!(
+                "Cannot read property '{}' of type {}",
+                p.coerce_string(),
+                val
+            );
         }
     }
 
@@ -37,7 +44,11 @@ fn set_value(name: &Vec<ShiroValue>, new_val: ShiroValue, scope: Rc<Scope>, heap
                 val = heap_obj.borrow().get(p);
                 obj = Some(heap_obj);
             } else {
-                panic!("Cannot write property '{}' of type {}", p, val);
+                panic!(
+                    "Cannot write property '{}' of type {}",
+                    p.coerce_string(),
+                    val
+                );
             }
         }
 
@@ -47,12 +58,17 @@ fn set_value(name: &Vec<ShiroValue>, new_val: ShiroValue, scope: Rc<Scope>, heap
     }
 }
 
-fn ref_to_string(r: &Reference, scope: Rc<Scope>, heap: &mut Heap) -> Vec<ShiroValue> {
+fn ref_to_string(
+    r: &Reference,
+    scope: Rc<Scope>,
+    heap: &mut Heap,
+    libs: &NativeLibProvider,
+) -> Vec<ShiroValue> {
     match &r {
         Reference::Regular(name) => map_strings(name),
         Reference::Indexed(name, idx) => {
             let mut name = map_strings(name);
-            name.push(idx.eval(scope.clone(), heap));
+            name.push(idx.eval(scope.clone(), heap, libs));
             name
         }
     }
@@ -63,91 +79,107 @@ fn map_strings(vec: &Vec<String>) -> Vec<ShiroValue> {
 }
 
 trait Eval {
-    fn eval(self, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue;
+    fn eval(self, scope: Rc<Scope>, heap: &mut Heap, libs: &NativeLibProvider) -> ShiroValue;
 }
 
 impl Eval for &Expr {
-    fn eval(self, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
+    fn eval(self, scope: Rc<Scope>, heap: &mut Heap, libs: &NativeLibProvider) -> ShiroValue {
         match self {
             Expr::Decimal(val) => ShiroValue::Decimal(*val),
             Expr::Integer(val) => ShiroValue::Integer(*val),
             Expr::Boolean(val) => ShiroValue::Boolean(*val),
             Expr::String(val) => ShiroValue::String(val.to_string()),
             Expr::Let(name, value) => {
-                let result = value.eval(scope.clone(), heap);
+                let result = value.eval(scope.clone(), heap, libs);
                 scope.put_by_str(name, result.clone(), true);
                 result
             }
             Expr::Reference(r) => {
-                let ref_str = &ref_to_string(r, scope.clone(), heap);
+                let ref_str = &ref_to_string(r, scope.clone(), heap, libs);
                 get_value(ref_str, scope.clone(), heap)
             }
             Expr::Use(path, name) => {
-                let str = fs::read_to_string(path).expect("Could not find module");
-                let imported_obj = eval_code(&str, heap);
+                let imported_obj = if libs.is_native_lib(path) {
+                    libs.load(&path, heap)
+                } else {
+                    let full_path = format!("{}.shiro", &path);
+                    let code = fs::read_to_string(&full_path)
+                        .expect(format!("Cannot load module '{}'", &path).as_str());
+                    eval_code(&code, heap, libs)
+                };
                 scope.put_by_str(name, imported_obj, true);
                 ShiroValue::Null
             }
             Expr::Op(lhs, op, rhs) => match op {
-                Opcode::Add => lhs.eval(scope.clone(), heap) + rhs.eval(scope.clone(), heap),
-                Opcode::Sub => lhs.eval(scope.clone(), heap) - rhs.eval(scope.clone(), heap),
-                Opcode::Mul => lhs.eval(scope.clone(), heap) * rhs.eval(scope.clone(), heap),
-                Opcode::Div => lhs.eval(scope.clone(), heap) / rhs.eval(scope.clone(), heap),
-                Opcode::Mod => lhs.eval(scope.clone(), heap) % rhs.eval(scope.clone(), heap),
+                Opcode::Add => {
+                    lhs.eval(scope.clone(), heap, libs) + rhs.eval(scope.clone(), heap, libs)
+                }
+                Opcode::Sub => {
+                    lhs.eval(scope.clone(), heap, libs) - rhs.eval(scope.clone(), heap, libs)
+                }
+                Opcode::Mul => {
+                    lhs.eval(scope.clone(), heap, libs) * rhs.eval(scope.clone(), heap, libs)
+                }
+                Opcode::Div => {
+                    lhs.eval(scope.clone(), heap, libs) / rhs.eval(scope.clone(), heap, libs)
+                }
+                Opcode::Mod => {
+                    lhs.eval(scope.clone(), heap, libs) % rhs.eval(scope.clone(), heap, libs)
+                }
                 Opcode::Lt => ShiroValue::Boolean(
-                    lhs.eval(scope.clone(), heap) < rhs.eval(scope.clone(), heap),
+                    lhs.eval(scope.clone(), heap, libs) < rhs.eval(scope.clone(), heap, libs),
                 ),
                 Opcode::Gt => ShiroValue::Boolean(
-                    lhs.eval(scope.clone(), heap) > rhs.eval(scope.clone(), heap),
+                    lhs.eval(scope.clone(), heap, libs) > rhs.eval(scope.clone(), heap, libs),
                 ),
                 Opcode::Lte => ShiroValue::Boolean(
-                    lhs.eval(scope.clone(), heap) <= rhs.eval(scope.clone(), heap),
+                    lhs.eval(scope.clone(), heap, libs) <= rhs.eval(scope.clone(), heap, libs),
                 ),
                 Opcode::Gte => ShiroValue::Boolean(
-                    lhs.eval(scope.clone(), heap) >= rhs.eval(scope.clone(), heap),
+                    lhs.eval(scope.clone(), heap, libs) >= rhs.eval(scope.clone(), heap, libs),
                 ),
                 Opcode::Eq => ShiroValue::Boolean(
-                    lhs.eval(scope.clone(), heap) == rhs.eval(scope.clone(), heap),
+                    lhs.eval(scope.clone(), heap, libs) == rhs.eval(scope.clone(), heap, libs),
                 ),
                 Opcode::Neq => ShiroValue::Boolean(
-                    lhs.eval(scope.clone(), heap) != rhs.eval(scope.clone(), heap),
+                    lhs.eval(scope.clone(), heap, libs) != rhs.eval(scope.clone(), heap, libs),
                 ),
             },
             Expr::AssignOp(lhs, op, rhs) => {
-                let ref_str = &ref_to_string(lhs, scope.clone(), heap);
+                let ref_str = &ref_to_string(lhs, scope.clone(), heap, libs);
                 match op {
                     AssignOpcode::Eq => {
-                        let new_val = rhs.eval(scope.clone(), heap);
+                        let new_val = rhs.eval(scope.clone(), heap, libs);
                         set_value(ref_str, new_val.clone(), scope.clone(), heap);
                         new_val
                     }
                     AssignOpcode::Add => {
-                        let val =
-                            get_value(ref_str, scope.clone(), heap) + rhs.eval(scope.clone(), heap);
+                        let val = get_value(ref_str, scope.clone(), heap)
+                            + rhs.eval(scope.clone(), heap, libs);
                         set_value(ref_str, val.clone(), scope.clone(), heap);
                         val
                     }
                     AssignOpcode::Sub => {
-                        let val =
-                            get_value(ref_str, scope.clone(), heap) - rhs.eval(scope.clone(), heap);
+                        let val = get_value(ref_str, scope.clone(), heap)
+                            - rhs.eval(scope.clone(), heap, libs);
                         set_value(ref_str, val.clone(), scope, heap);
                         val
                     }
                     AssignOpcode::Mul => {
-                        let val =
-                            get_value(ref_str, scope.clone(), heap) * rhs.eval(scope.clone(), heap);
+                        let val = get_value(ref_str, scope.clone(), heap)
+                            * rhs.eval(scope.clone(), heap, libs);
                         set_value(ref_str, val.clone(), scope, heap);
                         val
                     }
                     AssignOpcode::Div => {
-                        let val =
-                            get_value(ref_str, scope.clone(), heap) / rhs.eval(scope.clone(), heap);
+                        let val = get_value(ref_str, scope.clone(), heap)
+                            / rhs.eval(scope.clone(), heap, libs);
                         set_value(ref_str, val.clone(), scope, heap);
                         val
                     }
                     AssignOpcode::Mod => {
-                        let val =
-                            get_value(ref_str, scope.clone(), heap) % rhs.eval(scope.clone(), heap);
+                        let val = get_value(ref_str, scope.clone(), heap)
+                            % rhs.eval(scope.clone(), heap, libs);
                         set_value(ref_str, val.clone(), scope, heap);
                         val
                     }
@@ -180,13 +212,13 @@ impl Eval for &Expr {
                         let matching_arg_num = min(in_args.len(), args.len());
                         for i in 0..matching_arg_num {
                             let arg_key = &args[i];
-                            let arg_val = in_args[i].eval(scope.clone(), heap);
+                            let arg_val = in_args[i].eval(scope.clone(), heap, libs);
                             new_scope.put_by_str(arg_key, arg_val, true);
                         }
                         let rc = Rc::new(new_scope);
-                        eval_block(&body, rc, heap)
+                        eval_block(&body, rc, heap, libs)
                     }
-                    ShiroValue::NativeFunction(body) => body(scope, heap, in_args),
+                    ShiroValue::NativeFunction(body) => body(scope, heap, in_args, libs),
                     _ => {
                         panic!(
                             "Cannot call non-function reference {:?} of type {}",
@@ -195,26 +227,26 @@ impl Eval for &Expr {
                     }
                 }
             }
-            Expr::Return(expr) => expr.eval(scope, heap),
+            Expr::Return(expr) => expr.eval(scope, heap, libs),
             Expr::For(init_expr, condition_expr, inc_expr, body) => {
                 let new_scope = Rc::new(Scope::new(Some(scope.clone())));
-                init_expr.eval(new_scope.clone(), heap);
+                init_expr.eval(new_scope.clone(), heap, libs);
                 while condition_expr
-                    .eval(new_scope.clone(), heap)
+                    .eval(new_scope.clone(), heap, libs)
                     .coerce_boolean()
                 {
-                    eval_block(body, new_scope.clone(), heap);
-                    inc_expr.eval(new_scope.clone(), heap);
+                    eval_block(body, new_scope.clone(), heap, libs);
+                    inc_expr.eval(new_scope.clone(), heap, libs);
                 }
                 ShiroValue::Null
             }
             Expr::While(condition_expr, body) => {
                 let new_scope = Rc::new(Scope::new(Some(scope.clone())));
                 while condition_expr
-                    .eval(new_scope.clone(), heap)
+                    .eval(new_scope.clone(), heap, libs)
                     .coerce_boolean()
                 {
-                    eval_block(body, new_scope.clone(), heap);
+                    eval_block(body, new_scope.clone(), heap, libs);
                 }
                 ShiroValue::Null
             }
@@ -223,11 +255,11 @@ impl Eval for &Expr {
                     let new_scope = Rc::new(Scope::new(Some(scope.clone())));
                     match &branch.condition {
                         Some(c) => {
-                            if c.eval(new_scope.clone(), heap).coerce_boolean() {
-                                return eval_block(&branch.body, new_scope.clone(), heap);
+                            if c.eval(new_scope.clone(), heap, libs).coerce_boolean() {
+                                return eval_block(&branch.body, new_scope.clone(), heap, libs);
                             }
                         }
-                        None => return eval_block(&branch.body, new_scope.clone(), heap),
+                        None => return eval_block(&branch.body, new_scope.clone(), heap, libs),
                     }
                 }
 
@@ -238,8 +270,8 @@ impl Eval for &Expr {
                 let mut obj = obj.borrow_mut();
                 for def in body {
                     if let Expr::ShionDef(k, v) = def.as_ref() {
-                        let v = v.eval(scope.clone(), heap);
-                        obj.try_insert(k.clone(), v);
+                        let v = v.eval(scope.clone(), heap, libs);
+                        obj.try_insert(k, v);
                     } else {
                         panic!("Expected ShionDef got {:?}", def);
                     }
@@ -250,7 +282,7 @@ impl Eval for &Expr {
                 let arr = heap.alloc_array();
                 let mut arr = arr.borrow_mut();
                 for itm in items {
-                    let val = itm.eval(scope.clone(), heap);
+                    let val = itm.eval(scope.clone(), heap, libs);
                     arr.try_push(val);
                 }
                 ShiroValue::HeapRef(arr.address())
@@ -260,11 +292,16 @@ impl Eval for &Expr {
     }
 }
 
-fn eval_block(block: &Vec<Box<Expr>>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
+fn eval_block(
+    block: &Vec<Box<Expr>>,
+    scope: Rc<Scope>,
+    heap: &mut Heap,
+    libs: &NativeLibProvider,
+) -> ShiroValue {
     let mut retval = ShiroValue::Null;
     for expr in block {
         let expr = expr.as_ref();
-        retval = expr.eval(scope.clone(), heap);
+        retval = expr.eval(scope.clone(), heap, libs);
         if matches!(expr, Expr::Return(_)) {
             break;
         }
@@ -272,33 +309,42 @@ fn eval_block(block: &Vec<Box<Expr>>, scope: Rc<Scope>, heap: &mut Heap) -> Shir
     retval
 }
 
-fn eval_tree(tree: &Vec<Box<Expr>>, heap: &mut Heap) -> ShiroValue {
+fn eval_tree(tree: &Vec<Box<Expr>>, heap: &mut Heap, libs: &NativeLibProvider) -> ShiroValue {
     let global_scope = Rc::new(Scope::new(None));
-    global_scope.register_native_function("print", |scope, heap, args| {
+    global_scope.register_native_function("print", |scope, heap, args, libs| {
         let mut str = String::new();
         for arg in args {
-            str.push_str(arg.eval(scope.clone(), heap).coerce_string().as_str());
+            str.push_str(arg.eval(scope.clone(), heap, libs).coerce_string().as_str());
             str.push(' ');
         }
         println!("{}", str);
         ShiroValue::Null
     });
+    global_scope.register_native_function("typeof", |scope, heap, args, libs| {
+        if args.len() == 0 {
+            ShiroValue::Null
+        } else {
+            let val = args.first().unwrap().eval(scope, heap, libs);
+            ShiroValue::String(val.type_string())
+        }
+    });
 
-    let result = eval_block(tree, global_scope, heap);
+    let result = eval_block(tree, global_scope, heap, libs);
     result
 }
 
-fn eval_code(code: &String, heap: &mut Heap) -> ShiroValue {
+fn eval_code(code: &String, heap: &mut Heap, libs: &NativeLibProvider) -> ShiroValue {
     let preprocessed = preprocess_code(code.as_str());
     match shiro::ChunkParser::new().parse(&preprocessed.as_str()) {
-        Ok(ast) => eval_tree(&ast, heap),
+        Ok(ast) => eval_tree(&ast, heap, libs),
         Err(e) => panic!("Parser failed: {}", e),
     }
 }
 
 pub fn eval(code: &String) -> ShiroValue {
+    let native = NativeLibProvider::default();
     let mut heap = Heap::new();
-    let result = eval_code(code, &mut heap);
+    let result = eval_code(code, &mut heap, &native);
     heap.gc();
     dbg!(&heap);
     result

@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::value::{NativeFunctionPtr, ShiroValue};
+use super::{native::NativeFunctionPtr, value::ShiroValue};
 
 #[derive(Debug)]
 pub struct Scope {

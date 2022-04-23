@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::value::ShiroValue;
+use super::{native::NativeFunctionPtr, value::ShiroValue};
 
 #[derive(Debug)]
 pub enum HeapValue {
@@ -37,9 +37,13 @@ impl HeapObject {
         }
     }
 
-    pub fn try_insert(&mut self, key: String, val: ShiroValue) {
+    pub fn try_insert_fun(&mut self, key: &str, fun: NativeFunctionPtr) {
+        self.try_insert(key, ShiroValue::NativeFunction(fun))
+    }
+
+    pub fn try_insert(&mut self, key: &str, val: ShiroValue) {
         if let HeapValue::Object(map) = &mut self.value {
-            map.insert(key, val);
+            map.insert(key.to_string(), val);
         } else {
             panic!("Cannot only put String key into object");
         }

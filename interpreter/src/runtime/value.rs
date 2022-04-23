@@ -7,10 +7,7 @@ use std::{
 
 use crate::ast::Expr;
 
-use super::{heap::Heap, scope::Scope};
-
-pub type NativeFunctionPtr =
-    fn(scope: Rc<Scope>, heap: &mut Heap, args: &Vec<Box<Expr>>) -> ShiroValue;
+use super::{native::NativeFunctionPtr, scope::Scope};
 
 #[derive(Clone)]
 pub enum ShiroValue {
@@ -85,6 +82,20 @@ impl ShiroValue {
         } else {
             panic!("Cannot borrow string of non-string value");
         }
+    }
+
+    pub fn type_string(&self) -> String {
+        match self {
+            ShiroValue::String(_) => "string",
+            ShiroValue::Decimal(_) => "decimal",
+            ShiroValue::Integer(_) => "integer",
+            ShiroValue::Boolean(_) => "boolean",
+            ShiroValue::Function { .. } => "function",
+            ShiroValue::NativeFunction { .. } => "function",
+            ShiroValue::HeapRef(_) => "object",
+            ShiroValue::Null => "null",
+        }
+        .to_string()
     }
 
     pub fn coerce_string(&self) -> String {

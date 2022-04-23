@@ -1,13 +1,16 @@
-#use 'std/io' as io;
-use '../examples/example_lib.shiro' as example;
+use '@std/io' as io;
+use '../examples/example_lib' as example;
 
+let native_result = io.hello_native();
+print(native_result);
 
 
 for let i = 0; i < 4; i+=1 {
     example.test();
 }
 
-return 0;
+print('type is ' + typeof(io));
+
 
 let a = 1;
 let b = 2;
