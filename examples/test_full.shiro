@@ -1,7 +1,10 @@
 use '@std/io' as io;
 use '@std/os' as os;
+use '@std/time' as time;
 use '../examples/test_lib' as example;
 use '../examples/function_nesting' as fnnest;
+
+let start = time.millis();
 
 let native_result = io.hello_native();
 io.println(native_result);
@@ -76,5 +79,10 @@ io.println(test_obj.a.c);
 let test_arr = ['a', 'b', 'c'];
 test_arr[0] = 2;
 io.println(test_arr[0]);
+
+let end = time.millis();
+
+
+io.println('The code ran to completion in ' + (end - start) + 'ms.');
 
 1.0 + 0.5;

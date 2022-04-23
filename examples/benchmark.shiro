@@ -1,0 +1,13 @@
+use '@std/io' as io;
+use '@std/time' as time;
+
+let start = time.millis();
+
+let val = 32;
+for let i = 0; i < 10000000; i+=1 {
+    val *= 128;
+}
+
+let end = time.millis();
+
+io.println('The benchmark took ' + (end - start) + 'ms.');

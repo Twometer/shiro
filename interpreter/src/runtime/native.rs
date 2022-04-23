@@ -47,6 +47,7 @@ impl Default for NativeLibProvider {
         let mut provider = Self::new();
         provider.register_lib("@std/io", stdlib::io);
         provider.register_lib("@std/os", stdlib::os);
+        provider.register_lib("@std/time", stdlib::time);
         provider
     }
 }

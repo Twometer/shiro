@@ -10,5 +10,5 @@ pub fn lib(obj: &mut HeapObject) {
         let val = env::var(&key).unwrap_or("".to_string());
 
         ShiroValue::String(val)
-    })
+    });
 }
