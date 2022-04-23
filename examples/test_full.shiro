@@ -1,10 +1,12 @@
 use '@std/io' as io;
+use '@std/os' as os;
 use '../examples/test_lib' as example;
 use '../examples/function_nesting' as fnnest;
 
 let native_result = io.hello_native();
 io.println(native_result);
 
+io.println(os.getenv('APPDATA'));
 
 for let i = 0; i < 4; i+=1 {
     example.test();
