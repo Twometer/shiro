@@ -6,14 +6,11 @@ use super::{
     heap::{Heap, HeapObject},
     scope::Scope,
     value::ShiroValue,
+    RunContext,
 };
 
-pub type NativeFunctionPtr = fn(
-    scope: Rc<Scope>,
-    heap: &mut Heap,
-    args: &Vec<Box<Expr>>,
-    libs: &NativeLibProvider,
-) -> ShiroValue;
+pub type NativeFunctionPtr =
+    fn(args: &Vec<Box<Expr>>, scope: Rc<Scope>, ctx: &mut RunContext) -> ShiroValue;
 
 pub type NativeLibCreator = fn(obj: &mut HeapObject);
 
