@@ -73,13 +73,28 @@ fn map_strings(vec: &Vec<String>) -> Vec<ShiroValue> {
     vec.iter().map(|p| ShiroValue::String(p.clone())).collect()
 }
 
+fn load_library(path: &str, ctx: &mut RunContext) -> ShiroValue {
+    if ctx.libs.is_native_lib(path) {
+        ctx.libs.load(&path, ctx.heap)
+    } else {
+        let stdlib_path = std::env::var("SHIRO_LIB_PATH").expect("Shiro library path not set");
+        let full_path = if path.starts_with('@') {
+            format!("{}/{}.shiro", &stdlib_path, &path)
+        } else {
+            format!("{}.shiro", &path)
+        };
+        let code = fs::read_to_string(&full_path)
+            .expect(format!("Cannot load module '{}'", &path).as_str());
+        eval_code(&code, ctx)
+    }
+}
+
 pub trait Eval {
     fn eval(self, scope: Rc<Scope>, ctx: &mut RunContext) -> ShiroValue;
 }
 
 impl Eval for &Expr {
     fn eval(self, scope: Rc<Scope>, ctx: &mut RunContext) -> ShiroValue {
-        let libs = ctx.libs;
         match self {
             Expr::Decimal(val) => ShiroValue::Decimal(*val),
             Expr::Integer(val) => ShiroValue::Integer(*val),
@@ -95,15 +110,8 @@ impl Eval for &Expr {
                 get_value(ref_str, scope.clone(), ctx.heap)
             }
             Expr::Use(path, name) => {
-                let imported_obj = if libs.is_native_lib(path) {
-                    libs.load(&path, ctx.heap)
-                } else {
-                    let full_path = format!("{}.shiro", &path);
-                    let code = fs::read_to_string(&full_path)
-                        .expect(format!("Cannot load module '{}'", &path).as_str());
-                    eval_code(&code, ctx)
-                };
-                scope.put_by_str(name, imported_obj, true);
+                let lib = load_library(path, ctx);
+                scope.put_by_str(name, lib, true);
                 ShiroValue::Null
             }
             Expr::Op(lhs, op, rhs) => match op {

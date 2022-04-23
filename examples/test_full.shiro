@@ -1,8 +1,11 @@
 use '@std/io' as io;
 use '@std/os' as os;
 use '@std/time' as time;
+use '@std/log' as log;
 use '../examples/test_lib' as example;
 use '../examples/function_nesting' as fnnest;
+
+log.info('Hello, world!');
 
 let start = time.millis();
 

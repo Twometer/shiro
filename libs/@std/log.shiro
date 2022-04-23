@@ -1,0 +1,17 @@
+use '@std/io' as io;
+
+fun print_log(prefix, msg) {
+    io.println('[' + prefix + '] ' + msg);
+}
+
+return {
+    info = fun(msg) {
+        print_log('INFO', msg);
+    },
+    warn = fun(msg) {
+        print_log('WARN', msg);
+    },
+    error = fun(msg) {
+        print_log('ERROR', msg);
+    }
+};
