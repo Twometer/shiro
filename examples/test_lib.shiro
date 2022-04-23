@@ -1,6 +1,8 @@
+use '@std/io' as io;
+
 let y = 23;
 
-print('Hello from submodule');
+io.println('Hello from submodule');
 
 return {
     test = fun() {
@@ -19,6 +21,6 @@ return {
         x();
 
         y += fi;
-        print(y);
+        io.println(y);
     }
 };

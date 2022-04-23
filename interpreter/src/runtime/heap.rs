@@ -2,6 +2,8 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use super::{native::NativeFunctionPtr, value::ShiroValue};
 
+const HEAP_DEBUG: bool = false;
+
 #[derive(Debug)]
 pub enum HeapValue {
     Object(HashMap<String, ShiroValue>),
@@ -102,9 +104,15 @@ impl Heap {
     }
 
     pub fn gc(&mut self) {
+        if HEAP_DEBUG {
+            println!("[gc] running cycle");
+            dbg!(&self);
+        }
         self.objects.retain(|addr, obj| {
             let ct = Rc::strong_count(&obj);
-            println!("[gc] #{} has {} references", addr, ct);
+            if HEAP_DEBUG {
+                println!("[gc] #{} has {} references", addr, ct);
+            }
             ct > 1
         });
         // TODO cycle detection

@@ -73,7 +73,7 @@ fn map_strings(vec: &Vec<String>) -> Vec<ShiroValue> {
     vec.iter().map(|p| ShiroValue::String(p.clone())).collect()
 }
 
-trait Eval {
+pub trait Eval {
     fn eval(self, scope: Rc<Scope>, ctx: &mut RunContext) -> ShiroValue;
 }
 
@@ -286,15 +286,6 @@ fn eval_block(block: &Vec<Box<Expr>>, scope: Rc<Scope>, ctx: &mut RunContext) ->
 
 fn eval_tree(tree: &Vec<Box<Expr>>, ctx: &mut RunContext) -> ShiroValue {
     let global_scope = Rc::new(Scope::new(None));
-    global_scope.register_native_function("print", |args, scope, ctx| {
-        let mut str = String::new();
-        for arg in args {
-            str.push_str(arg.eval(scope.clone(), ctx).coerce_string().as_str());
-            str.push(' ');
-        }
-        println!("{}", str);
-        ShiroValue::Null
-    });
     global_scope.register_native_function("typeof", |args, scope, ctx| {
         if args.len() == 0 {
             ShiroValue::Null
@@ -304,8 +295,7 @@ fn eval_tree(tree: &Vec<Box<Expr>>, ctx: &mut RunContext) -> ShiroValue {
         }
     });
 
-    let result = eval_block(tree, global_scope, ctx);
-    result
+    eval_block(tree, global_scope, ctx)
 }
 
 fn eval_code(code: &str, ctx: &mut RunContext) -> ShiroValue {
@@ -324,7 +314,5 @@ pub fn eval(code: &str) -> ShiroValue {
     let result = eval_code(code, &mut ctx);
 
     heap.gc();
-    dbg!(&heap);
-
     result
 }

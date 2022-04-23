@@ -1,21 +1,22 @@
 use '@std/io' as io;
-use '../examples/example_lib' as example;
+use '../examples/test_lib' as example;
+use '../examples/function_nesting' as fnnest;
 
 let native_result = io.hello_native();
-print(native_result);
+io.println(native_result);
 
 
 for let i = 0; i < 4; i+=1 {
     example.test();
 }
 
-print('type is ' + typeof(io));
+io.println('type is ' + typeof(io));
 
 
 let a = 1;
 let b = 2;
 let c = 2 * a + b;
-print(c);
+io.println(c);
 
 let test_fun = fun() {
     a = 4;
@@ -26,52 +27,52 @@ fun test_fun_2() {
     ;
 }
 
-print('----');
+io.println('----');
 b = (c = 64);
-print(c);
-print(b);
+io.println(c);
+io.println(b);
 test_fun();
 test_fun_2();
 
-print(a, b, c);
+io.println(a, b, c);
 
 for let i = 0; i < 10; i += 1 {
     fun test() {
-        print(i);
+        io.println(i);
     }
 
-    print('For loop Test!', i);
+    io.println('For loop Test!', i);
     test();
 }
 
 let i = 23;
 while (i -= 1) > 0 {
-    print('While loop test!');
+    io.println('While loop test!');
 }
 
 let a = 6;
 
 if a == 5 {
-    print('is 5!'); 
+    io.println('is 5!'); 
 } else if a == 6 {
-    print('is 6!'); 
+    io.println('is 6!'); 
 } else {
-    print('not 5!'); 
+    io.println('not 5!'); 
 }
 
 let test_obj = { a = { b = 3 } };
 
-print(test_obj);
-print(test_obj.a.b);
+io.println(test_obj);
+io.println(test_obj.a.b);
 test_obj.a.b += 2;
-print(test_obj.a['b']);
+io.println(test_obj.a['b']);
 
 test_obj.f = 23;
-print(test_obj.f);
-print(test_obj.a.c);
+io.println(test_obj.f);
+io.println(test_obj.a.c);
 
 let test_arr = ['a', 'b', 'c'];
 test_arr[0] = 2;
-print(test_arr[0]);
+io.println(test_arr[0]);
 
 1.0 + 0.5;

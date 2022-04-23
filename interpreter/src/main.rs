@@ -9,7 +9,7 @@ use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(pub shiro);
 
 fn main() {
-    let code = fs::read_to_string("../examples/simple.shiro").unwrap();
+    let code = fs::read_to_string("../examples/test_full.shiro").unwrap();
     let result = runtime::eval::eval(&code);
-    dbg!(result);
+    println!("{}", result.coerce_string());
 }

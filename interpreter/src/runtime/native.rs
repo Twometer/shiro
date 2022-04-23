@@ -1,4 +1,4 @@
-use std::{collections::HashMap, panic, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{ast::Expr, stdlib};
 
