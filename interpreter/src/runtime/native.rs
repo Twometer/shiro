@@ -25,18 +25,15 @@ impl NativeLibProvider {
         }
     }
     pub fn is_native_lib(&self, name: &str) -> bool {
-        return name.chars().nth(0) == Some('@');
+        return self.registry.contains_key(name);
     }
     pub fn load(&self, name: &str, heap: &mut Heap) -> ShiroValue {
-        let registered = self.registry.get(name);
-        if matches!(registered, None) {
-            panic!("Cannot find native library {}", name);
-        }
+        let creator = self.registry[name];
 
         let obj = heap.alloc_object();
         let mut obj = obj.borrow_mut();
 
-        registered.unwrap()(&mut obj);
+        creator(&mut obj);
 
         ShiroValue::HeapRef(obj.address())
     }
