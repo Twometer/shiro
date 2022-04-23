@@ -25,7 +25,7 @@ fn get_value(name: &Vec<ShiroValue>, scope: Rc<Scope>, heap: &mut Heap) -> Shiro
 fn set_value(name: &Vec<ShiroValue>, new_val: ShiroValue, scope: Rc<Scope>, heap: &mut Heap) {
     let local_name = name.first().expect("Invalid identifier");
     if name.len() == 1 {
-        scope.put_by_val(local_name, new_val);
+        scope.put_by_val(local_name, new_val, false);
     } else {
         let mut val = scope.get_by_val(local_name);
         let mut obj = None;
@@ -75,7 +75,7 @@ impl Eval for &Expr {
             Expr::String(val) => ShiroValue::String(val.to_string()),
             Expr::Let(name, value) => {
                 let result = value.eval(scope.clone(), heap);
-                scope.put_by_str(name, result.clone());
+                scope.put_by_str(name, result.clone(), true);
                 result
             }
             Expr::Reference(r) => {
@@ -85,7 +85,7 @@ impl Eval for &Expr {
             Expr::Use(path, name) => {
                 let str = fs::read_to_string(path).expect("Could not find module");
                 let imported_obj = eval_code(&str, heap);
-                scope.put_by_str(name, imported_obj);
+                scope.put_by_str(name, imported_obj, true);
                 ShiroValue::Null
             }
             Expr::Op(lhs, op, rhs) => match op {
@@ -161,7 +161,7 @@ impl Eval for &Expr {
                 };
                 match name {
                     Some(name) => {
-                        scope.put_by_str(name, shiro_fun);
+                        scope.put_by_str(name, shiro_fun, true);
                         ShiroValue::Null
                     }
                     _ => shiro_fun,
@@ -181,7 +181,7 @@ impl Eval for &Expr {
                         for i in 0..matching_arg_num {
                             let arg_key = &args[i];
                             let arg_val = in_args[i].eval(scope.clone(), heap);
-                            new_scope.put_by_str(arg_key, arg_val);
+                            new_scope.put_by_str(arg_key, arg_val, true);
                         }
                         let rc = Rc::new(new_scope);
                         eval_block(&body, rc, heap)

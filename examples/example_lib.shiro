@@ -4,7 +4,21 @@ print('Hello from submodule');
 
 return {
     test = fun() {
-        y += 1;
+        let fi = 3;
+
+        fun x() {
+            fun y() {
+                fun z() {
+                    fi = fi + 2;
+                }
+                z();
+            }
+            y();
+        }
+
+        x();
+
+        y += fi;
         print(y);
     }
 };
