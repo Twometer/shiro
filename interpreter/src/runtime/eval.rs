@@ -7,8 +7,8 @@ use crate::{
 
 use super::{heap::Heap, preproc::preprocess_code, scope::Scope, value::ShiroValue};
 
-fn get_value(name: &Vec<String>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
-    let mut val = scope.find(&name.first().expect("Invalid identifier"));
+fn get_value(name: &Vec<ShiroValue>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
+    let mut val = scope.get_by_val(&name.first().expect("Invalid identifier"));
 
     for p in name.iter().skip(1) {
         if let ShiroValue::HeapRef(addr) = val {
@@ -22,12 +22,12 @@ fn get_value(name: &Vec<String>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValu
     val
 }
 
-fn set_value(name: &Vec<String>, new_val: ShiroValue, scope: Rc<Scope>, heap: &mut Heap) {
+fn set_value(name: &Vec<ShiroValue>, new_val: ShiroValue, scope: Rc<Scope>, heap: &mut Heap) {
     let local_name = name.first().expect("Invalid identifier");
     if name.len() == 1 {
-        scope.put(local_name, new_val);
+        scope.put_by_val(local_name, new_val);
     } else {
-        let mut val = scope.find(local_name);
+        let mut val = scope.get_by_val(local_name);
         let mut obj = None;
 
         for i in 1..name.len() {
@@ -41,19 +41,25 @@ fn set_value(name: &Vec<String>, new_val: ShiroValue, scope: Rc<Scope>, heap: &m
             }
         }
 
-        obj.unwrap().borrow_mut().put(name.last().unwrap(), new_val);
+        obj.unwrap()
+            .borrow_mut()
+            .put(name.last().unwrap().clone(), new_val);
     }
 }
 
-fn ref_to_string(r: &Reference, scope: Rc<Scope>, heap: &mut Heap) -> Vec<String> {
+fn ref_to_string(r: &Reference, scope: Rc<Scope>, heap: &mut Heap) -> Vec<ShiroValue> {
     match &r {
-        Reference::Regular(name) => name.clone(),
+        Reference::Regular(name) => map_strings(name),
         Reference::Indexed(name, idx) => {
-            let mut new_name = name.clone();
-            new_name.push(idx.eval(scope.clone(), heap).coerce_string());
-            new_name
+            let mut name = map_strings(name);
+            name.push(idx.eval(scope.clone(), heap));
+            name
         }
     }
+}
+
+fn map_strings(vec: &Vec<String>) -> Vec<ShiroValue> {
+    vec.iter().map(|p| ShiroValue::String(p.clone())).collect()
 }
 
 trait Eval {
@@ -69,7 +75,7 @@ impl Eval for &Expr {
             Expr::String(val) => ShiroValue::String(val.to_string()),
             Expr::Let(name, value) => {
                 let result = value.eval(scope.clone(), heap);
-                scope.put(name, result.clone());
+                scope.put_by_str(name, result.clone());
                 result
             }
             Expr::Reference(r) => {
@@ -79,7 +85,7 @@ impl Eval for &Expr {
             Expr::Use(path, name) => {
                 let str = fs::read_to_string(path).expect("Could not find module");
                 let imported_obj = eval_code(&str, heap);
-                scope.put(name, imported_obj);
+                scope.put_by_str(name, imported_obj);
                 ShiroValue::Null
             }
             Expr::Op(lhs, op, rhs) => match op {
@@ -155,13 +161,14 @@ impl Eval for &Expr {
                 };
                 match name {
                     Some(name) => {
-                        scope.put(name, shiro_fun);
+                        scope.put_by_str(name, shiro_fun);
                         ShiroValue::Null
                     }
                     _ => shiro_fun,
                 }
             }
             Expr::Invocation(name, in_args) => {
+                let name = &map_strings(name);
                 let target = get_value(name, scope.clone(), heap);
                 match target {
                     ShiroValue::Function {
@@ -174,7 +181,7 @@ impl Eval for &Expr {
                         for i in 0..matching_arg_num {
                             let arg_key = &args[i];
                             let arg_val = in_args[i].eval(scope.clone(), heap);
-                            new_scope.put(arg_key, arg_val);
+                            new_scope.put_by_str(arg_key, arg_val);
                         }
                         let rc = Rc::new(new_scope);
                         eval_block(&body, rc, heap)
@@ -227,30 +234,26 @@ impl Eval for &Expr {
                 ShiroValue::Null
             }
             Expr::ShionObject(body) => {
-                let obj = heap.alloc();
-                let mut obj_mut = obj.borrow_mut();
-                let addr = obj_mut.address();
+                let obj = heap.alloc_object();
+                let mut obj = obj.borrow_mut();
                 for def in body {
                     if let Expr::ShionDef(k, v) = def.as_ref() {
                         let v = v.eval(scope.clone(), heap);
-                        obj_mut.put(k, v);
+                        obj.try_insert(k.clone(), v);
                     } else {
                         panic!("Expected ShionDef got {:?}", def);
                     }
                 }
-                ShiroValue::HeapRef(addr)
+                ShiroValue::HeapRef(obj.address())
             }
             Expr::ShionArray(items) => {
-                let obj = heap.alloc();
-                let mut obj_mut = obj.borrow_mut();
-                let addr = obj_mut.address();
-                let mut idx = 0;
+                let arr = heap.alloc_array();
+                let mut arr = arr.borrow_mut();
                 for itm in items {
                     let val = itm.eval(scope.clone(), heap);
-                    obj_mut.put(&idx.to_string(), val);
-                    idx += 1;
+                    arr.try_push(val);
                 }
-                ShiroValue::HeapRef(addr)
+                ShiroValue::HeapRef(arr.address())
             }
             _ => ShiroValue::Null,
         }

@@ -16,10 +16,15 @@ impl Scope {
         }
     }
 
-    pub fn find(&self, name: &String) -> ShiroValue {
+    pub fn get_by_val(&self, name: &ShiroValue) -> ShiroValue {
+        let name_str = name.borrow_string();
+        return self.get_by_str(name_str);
+    }
+
+    pub fn get_by_str(&self, name: &String) -> ShiroValue {
         if !self.vars.borrow().contains_key(name) {
             match &self.parent {
-                Some(parent) => parent.find(name),
+                Some(parent) => parent.get_by_str(name),
                 _ => ShiroValue::Null,
             }
         } else {
@@ -27,11 +32,17 @@ impl Scope {
         }
     }
 
-    pub fn put(&self, name: &String, val: ShiroValue) {
+    pub fn put_by_str(&self, name: &String, val: ShiroValue) {
         self.vars.borrow_mut().insert(name.to_string(), val);
     }
 
+    pub fn put_by_val(&self, name: &ShiroValue, val: ShiroValue) {
+        self.vars.borrow_mut().insert(name.coerce_string(), val);
+    }
+
     pub fn register_native_function(&self, name: &str, ptr: NativeFunctionPtr) {
-        self.put(&name.to_string(), ShiroValue::NativeFunction(ptr));
+        self.vars
+            .borrow_mut()
+            .insert(name.to_string(), ShiroValue::NativeFunction(ptr));
     }
 }

@@ -79,6 +79,14 @@ impl ShiroValue {
         }
     }
 
+    pub fn borrow_string(&self) -> &String {
+        if let ShiroValue::String(s) = self {
+            return s;
+        } else {
+            panic!("Cannot borrow string of non-string value");
+        }
+    }
+
     pub fn coerce_string(&self) -> String {
         match self {
             ShiroValue::String(s) => s.to_string(),
