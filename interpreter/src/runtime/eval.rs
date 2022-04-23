@@ -333,15 +333,15 @@ fn eval_tree(tree: &Vec<Box<Expr>>, heap: &mut Heap, libs: &NativeLibProvider) -
     result
 }
 
-fn eval_code(code: &String, heap: &mut Heap, libs: &NativeLibProvider) -> ShiroValue {
-    let preprocessed = preprocess_code(code.as_str());
+fn eval_code(code: &str, heap: &mut Heap, libs: &NativeLibProvider) -> ShiroValue {
+    let preprocessed = preprocess_code(code);
     match shiro::ChunkParser::new().parse(&preprocessed.as_str()) {
         Ok(ast) => eval_tree(&ast, heap, libs),
         Err(e) => panic!("Parser failed: {}", e),
     }
 }
 
-pub fn eval(code: &String) -> ShiroValue {
+pub fn eval(code: &str) -> ShiroValue {
     let native = NativeLibProvider::default();
     let mut heap = Heap::new();
     let result = eval_code(code, &mut heap, &native);

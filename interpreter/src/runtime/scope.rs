@@ -21,7 +21,7 @@ impl Scope {
         return self.get_by_str(name_str);
     }
 
-    pub fn get_by_str(&self, name: &String) -> ShiroValue {
+    pub fn get_by_str(&self, name: &str) -> ShiroValue {
         if !self.vars.borrow().contains_key(name) {
             match &self.parent {
                 Some(parent) => parent.get_by_str(name),
@@ -32,7 +32,7 @@ impl Scope {
         }
     }
 
-    pub fn put_by_str(&self, name: &String, val: ShiroValue, define: bool) {
+    pub fn put_by_str(&self, name: &str, val: ShiroValue, define: bool) {
         self.put_cascade(name.to_string(), val, define);
     }
 
