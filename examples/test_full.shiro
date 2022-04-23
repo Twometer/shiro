@@ -97,6 +97,8 @@ for let i = 0; i < len(io_keys); i += 1 {
     io.println('found key: ' + io_keys[i]);
 }
 
+let str = 'asdfg';
+io.println(len(str));
 
 io.println('The code ran to completion in ' + (end - start) + 'ms.');
 

@@ -68,7 +68,7 @@ impl HeapObject {
 
     pub fn keys(&self) -> Vec<String> {
         match &self.value {
-            HeapValue::Array(vec) => panic!("Cannot get keys of array"),
+            HeapValue::Array(_) => panic!("Cannot get keys of array"),
             HeapValue::Object(map) => map.keys().map(|k| k.to_string()).collect(),
         }
     }

@@ -1,4 +1,4 @@
-use std::{any::Any, cmp::min, fs, rc::Rc};
+use std::{cmp::min, fs, rc::Rc};
 
 use crate::{
     ast::{AssignOpcode, Expr, Opcode, Reference},
@@ -318,12 +318,16 @@ fn eval_tree(tree: &Vec<Box<Expr>>, ctx: &mut RunContext) -> ShiroValue {
     global_scope.register_native_function("len", |args, scope, ctx| {
         assert!(args.len() == 1);
         let dst = args[0].eval(scope.clone(), ctx);
-        if let ShiroValue::HeapRef(array_addr) = dst {
-            let obj = ctx.heap.deref(array_addr);
-            let obj = obj.borrow_mut();
-            return ShiroValue::Integer(obj.len() as i32);
-        } else {
-            panic!("Cannot get length of value of type {}", dst.type_string());
+        match &dst {
+            ShiroValue::HeapRef(array_addr) => {
+                let obj = ctx.heap.deref(*array_addr);
+                let obj = obj.borrow_mut();
+                return ShiroValue::Integer(obj.len() as i32);
+            }
+            ShiroValue::String(str) => {
+                return ShiroValue::Integer(str.len() as i32);
+            }
+            _ => panic!("Cannot get length of type {}", dst.type_string()),
         }
     });
     global_scope.register_native_function("keys", |args, scope, ctx| {
