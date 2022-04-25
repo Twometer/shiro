@@ -8,8 +8,8 @@ pub mod scope;
 pub mod value;
 
 pub struct RunContext<'a> {
-    heap: &'a mut Heap,
-    libs: &'a NativeLibProvider,
+    pub heap: &'a mut Heap,
+    pub libs: &'a NativeLibProvider,
 }
 
 impl<'a> RunContext<'a> {

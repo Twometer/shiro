@@ -14,15 +14,25 @@ fn get_value(name: &Vec<ShiroValue>, scope: Rc<Scope>, heap: &mut Heap) -> Shiro
     let mut val = scope.get_by_val(&name.first().expect("Invalid identifier"));
 
     for p in name.iter().skip(1) {
-        if let ShiroValue::HeapRef(addr) = val {
-            let heap_obj = heap.deref(addr);
-            val = heap_obj.borrow().get(p);
-        } else {
-            panic!(
-                "Cannot read property '{}' of type {}",
-                p.coerce_string(),
-                val
-            );
+        match &val {
+            ShiroValue::HeapRef(addr) => {
+                let heap_obj = heap.deref(*addr);
+                val = heap_obj.borrow().get(p);
+            }
+            ShiroValue::String(str) => {
+                let chr = str.chars().nth(p.coerce_integer() as usize);
+                match chr {
+                    Some(chr) => val = ShiroValue::Char(chr),
+                    None => val = ShiroValue::Null,
+                }
+            }
+            _ => {
+                panic!(
+                    "Cannot read property '{}' of type {}",
+                    p.coerce_string(),
+                    val
+                );
+            }
         }
     }
 

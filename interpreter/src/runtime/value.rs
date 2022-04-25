@@ -15,6 +15,7 @@ pub enum ShiroValue {
     Integer(i32),
     Decimal(f32),
     Boolean(bool),
+    Char(char),
     Function {
         args: Vec<String>,
         body: Vec<Box<Expr>>,
@@ -28,6 +29,7 @@ pub enum ShiroValue {
 impl std::fmt::Display for ShiroValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            ShiroValue::Char(_) => write!(f, "Char"),
             ShiroValue::String(_) => write!(f, "String"),
             ShiroValue::Integer(_) => write!(f, "Integer"),
             ShiroValue::Decimal(_) => write!(f, "Decimal"),
@@ -43,6 +45,7 @@ impl std::fmt::Display for ShiroValue {
 impl std::fmt::Debug for ShiroValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Char(arg0) => f.debug_tuple("Char").field(arg0).finish(),
             Self::String(arg0) => f.debug_tuple("String").field(arg0).finish(),
             Self::Integer(arg0) => f.debug_tuple("Integer").field(arg0).finish(),
             Self::Decimal(arg0) => f.debug_tuple("Decimal").field(arg0).finish(),
@@ -72,7 +75,15 @@ impl ShiroValue {
                     0
                 }
             }
+            ShiroValue::Char(c) => *c as i32,
             _ => 0,
+        }
+    }
+
+    pub fn coerce_char(&self) -> char {
+        match self {
+            ShiroValue::Char(c) => *c,
+            _ => '\0',
         }
     }
 
@@ -87,6 +98,7 @@ impl ShiroValue {
     pub fn type_string(&self) -> String {
         match self {
             ShiroValue::String(_) => "string",
+            ShiroValue::Char(_) => "char",
             ShiroValue::Decimal(_) => "decimal",
             ShiroValue::Integer(_) => "integer",
             ShiroValue::Boolean(_) => "boolean",
@@ -104,6 +116,7 @@ impl ShiroValue {
             ShiroValue::Decimal(v) => v.to_string(),
             ShiroValue::Integer(v) => v.to_string(),
             ShiroValue::Boolean(v) => v.to_string(),
+            ShiroValue::Char(c) => c.to_string(),
             ShiroValue::Function { .. } => "[function]".to_string(),
             ShiroValue::NativeFunction { .. } => "[native function]".to_string(),
             ShiroValue::HeapRef(_) => "[object]".to_string(),
@@ -116,6 +129,7 @@ impl ShiroValue {
             ShiroValue::String(s) => f32::from_str(s.as_str()).unwrap(),
             ShiroValue::Decimal(d) => *d,
             ShiroValue::Integer(d) => *d as f32,
+            ShiroValue::Char(c) => (*c as i32) as f32,
             ShiroValue::Boolean(d) => {
                 if *d {
                     1.0
@@ -136,7 +150,7 @@ impl ShiroValue {
             ShiroValue::Function { .. } => true,
             ShiroValue::NativeFunction { .. } => true,
             ShiroValue::HeapRef(_) => true,
-
+            ShiroValue::Char(c) => *c != '\0',
             _ => false,
         }
     }
@@ -153,6 +167,7 @@ impl Add for ShiroValue {
                 ShiroValue::Integer(self.coerce_integer() + rhs.coerce_integer())
             }
             ShiroValue::Decimal(d) => ShiroValue::Decimal(*d + rhs.coerce_decimal()),
+            ShiroValue::Char(c) => ShiroValue::String(c.to_string() + &rhs.coerce_string()),
             _ => ShiroValue::Null,
         }
     }
@@ -223,6 +238,7 @@ impl PartialEq for ShiroValue {
             ShiroValue::Integer(i) => *i == other.coerce_integer(),
             ShiroValue::Boolean(b) => *b == other.coerce_boolean(),
             ShiroValue::Decimal(d) => *d == other.coerce_decimal(),
+            ShiroValue::Char(c) => *c as i32 == other.coerce_integer(),
             // TODO: function equality
             _ => false,
         }
@@ -236,6 +252,7 @@ impl PartialOrd for ShiroValue {
             ShiroValue::Integer(i) => Some(i.cmp(&other.coerce_integer())),
             ShiroValue::Boolean(b) => Some(b.cmp(&other.coerce_boolean())),
             ShiroValue::Decimal(d) => d.partial_cmp(&other.coerce_decimal()),
+            ShiroValue::Char(c) => c.partial_cmp(&other.coerce_char()),
             _ => None,
         }
     }

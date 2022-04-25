@@ -21,6 +21,8 @@ for let i = 0; i < 4; i+=1 {
 
 io.println('type is ' + typeof(io));
 
+let str = 'asdf';
+io.println('string indexing: ' + str[0]);
 
 let a = 1;
 let b = 2;
