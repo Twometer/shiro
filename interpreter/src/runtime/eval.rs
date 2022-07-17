@@ -1,7 +1,7 @@
 use std::{cmp::min, rc::Rc};
 
 use crate::{
-    ast::{AssignOpcode, Expr, Opcode, Reference},
+    ast::{AssignOpcode, BinaryOpcode, Expr, Reference, UnaryOpcode},
     parser::CodeFile,
 };
 
@@ -121,34 +121,34 @@ impl Eval for &Expr {
                 ShiroValue::Null
             }
             Expr::BinaryOp(lhs, op, rhs) => match op {
-                Opcode::Add => lhs.eval(scope.clone(), ctx) + rhs.eval(scope.clone(), ctx),
-                Opcode::Sub => lhs.eval(scope.clone(), ctx) - rhs.eval(scope.clone(), ctx),
-                Opcode::Mul => lhs.eval(scope.clone(), ctx) * rhs.eval(scope.clone(), ctx),
-                Opcode::Div => lhs.eval(scope.clone(), ctx) / rhs.eval(scope.clone(), ctx),
-                Opcode::Mod => lhs.eval(scope.clone(), ctx) % rhs.eval(scope.clone(), ctx),
-                Opcode::Lt => {
+                BinaryOpcode::Add => lhs.eval(scope.clone(), ctx) + rhs.eval(scope.clone(), ctx),
+                BinaryOpcode::Sub => lhs.eval(scope.clone(), ctx) - rhs.eval(scope.clone(), ctx),
+                BinaryOpcode::Mul => lhs.eval(scope.clone(), ctx) * rhs.eval(scope.clone(), ctx),
+                BinaryOpcode::Div => lhs.eval(scope.clone(), ctx) / rhs.eval(scope.clone(), ctx),
+                BinaryOpcode::Mod => lhs.eval(scope.clone(), ctx) % rhs.eval(scope.clone(), ctx),
+                BinaryOpcode::Lt => {
                     ShiroValue::Boolean(lhs.eval(scope.clone(), ctx) < rhs.eval(scope.clone(), ctx))
                 }
-                Opcode::Gt => {
+                BinaryOpcode::Gt => {
                     ShiroValue::Boolean(lhs.eval(scope.clone(), ctx) > rhs.eval(scope.clone(), ctx))
                 }
-                Opcode::Lte => ShiroValue::Boolean(
+                BinaryOpcode::Lte => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx) <= rhs.eval(scope.clone(), ctx),
                 ),
-                Opcode::Gte => ShiroValue::Boolean(
+                BinaryOpcode::Gte => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx) >= rhs.eval(scope.clone(), ctx),
                 ),
-                Opcode::Eq => ShiroValue::Boolean(
+                BinaryOpcode::Eq => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx) == rhs.eval(scope.clone(), ctx),
                 ),
-                Opcode::Neq => ShiroValue::Boolean(
+                BinaryOpcode::Neq => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx) != rhs.eval(scope.clone(), ctx),
                 ),
-                Opcode::BOr => ShiroValue::Boolean(
+                BinaryOpcode::BOr => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx).coerce_boolean()
                         || rhs.eval(scope.clone(), ctx).coerce_boolean(),
                 ),
-                Opcode::BAnd => ShiroValue::Boolean(
+                BinaryOpcode::BAnd => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx).coerce_boolean()
                         && rhs.eval(scope.clone(), ctx).coerce_boolean(),
                 ),
@@ -289,7 +289,14 @@ impl Eval for &Expr {
                 }
                 ShiroValue::HeapRef(arr.address())
             }
-            _ => ShiroValue::Null,
+            Expr::UnaryOp(op, expr) => {
+                let value = expr.eval(scope.clone(), ctx);
+                match op {
+                    UnaryOpcode::BNot => ShiroValue::Boolean(!value.coerce_boolean()),
+                    //_ => panic!("Unknown operation {:?}", &op),
+                }
+            }
+            _ => panic!("Unknown instruction {:?}", &self),
         }
     }
 }

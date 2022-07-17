@@ -108,6 +108,9 @@ let b = false;
 io.println(a || b);
 io.println(a && b);
 
+let c = a || b;
+io.println(!c); #Should print false
+
 log.info('The code ran to completion in ' + (end - start) + 'ms.');
 
 1.0 + 0.5;

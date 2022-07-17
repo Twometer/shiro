@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Opcode, IfBranch, AssignOpcode, Reference};
+use crate::ast::{Expr, IfBranch, AssignOpcode, UnaryOpcode, BinaryOpcode, Reference};
 
 grammar;
 
@@ -71,9 +71,9 @@ BoolExpr: Box<Expr> = {
     CmpExpr
 }
 
-BoolOp: Opcode = {
-    "&&" => Opcode::BAnd,
-    "||" => Opcode::BOr,
+BoolOp: BinaryOpcode = {
+    "&&" => BinaryOpcode::BAnd,
+    "||" => BinaryOpcode::BOr,
 };
 
 CmpExpr: Box<Expr> = {
@@ -81,13 +81,13 @@ CmpExpr: Box<Expr> = {
     Sum
 }
 
-CmpOp: Opcode = {
-    "!=" => Opcode::Neq,
-    "==" => Opcode::Eq,
-    ">" => Opcode::Gt,
-    ">=" => Opcode::Gte,
-    "<" => Opcode::Lt,
-    "<=" => Opcode::Lte,
+CmpOp: BinaryOpcode = {
+    "!=" => BinaryOpcode::Neq,
+    "==" => BinaryOpcode::Eq,
+    ">" => BinaryOpcode::Gt,
+    ">=" => BinaryOpcode::Gte,
+    "<" => BinaryOpcode::Lt,
+    "<=" => BinaryOpcode::Lte,
 };
 
 Sum: Box<Expr> = {
@@ -95,21 +95,26 @@ Sum: Box<Expr> = {
     Factor,
 };
 
-SumOp: Opcode = {
-    "+" => Opcode::Add,
-    "-" => Opcode::Sub,
+SumOp: BinaryOpcode = {
+    "+" => BinaryOpcode::Add,
+    "-" => BinaryOpcode::Sub,
 };
 
 Factor: Box<Expr> = {
     Factor FactorOp Term => Box::new(Expr::BinaryOp(<>)),
-    Term,
+    NotExpr,
 };
 
-FactorOp: Opcode = {
-    "*" => Opcode::Mul,
-    "/" => Opcode::Div,
-    "%" => Opcode::Mod,
+FactorOp: BinaryOpcode = {
+    "*" => BinaryOpcode::Mul,
+    "/" => BinaryOpcode::Div,
+    "%" => BinaryOpcode::Mod,
 };
+
+NotExpr: Box<Expr> = {
+    "!" <e:NotExpr> => Box::new(Expr::UnaryOp(UnaryOpcode::BNot, e)),
+    Term
+}
 
 Term: Box<Expr> = {
     "null" => Box::new(Expr::Null),

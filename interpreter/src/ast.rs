@@ -9,7 +9,8 @@ pub enum Expr {
     Boolean(bool),
     Reference(Reference),
     AssignOp(Reference, AssignOpcode, Box<Expr>),
-    BinaryOp(Box<Expr>, Opcode, Box<Expr>),
+    BinaryOp(Box<Expr>, BinaryOpcode, Box<Expr>),
+    UnaryOp(UnaryOpcode, Box<Expr>),
     Invocation(Vec<String>, Vec<Box<Expr>>),
     FunctionDecl(Option<String>, Vec<String>, Vec<Box<Expr>>),
     ObjectDef(Vec<Box<Expr>>),
@@ -39,7 +40,7 @@ pub enum AssignOpcode {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Opcode {
+pub enum BinaryOpcode {
     Add,
     Sub,
     Mul,
@@ -53,6 +54,11 @@ pub enum Opcode {
     Lte,
     BOr,
     BAnd,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum UnaryOpcode {
+    BNot,
 }
 
 #[derive(Debug, PartialEq, Clone)]
