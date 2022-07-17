@@ -84,9 +84,9 @@ fn load_library(path: &str, ctx: &mut RunContext) -> ShiroValue {
     if ctx.libs.is_native_lib(path) {
         ctx.libs.load(&path, ctx.heap)
     } else {
-        let stdlib_path = std::env::var("SHIRO_LIB_PATH").expect("Shiro library path not set");
-        let full_path = if path.starts_with('@') {
-            format!("{}/{}.shiro", &stdlib_path, &path)
+        let stdlib_path = std::env::var("SHIRO_LIB_PATH");
+        let full_path = if path.starts_with('@') && stdlib_path.is_ok() {
+            format!("{}/{}.shiro", &stdlib_path.unwrap(), &path)
         } else {
             format!("{}.shiro", &path)
         };

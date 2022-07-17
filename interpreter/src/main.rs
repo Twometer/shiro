@@ -3,6 +3,7 @@ use lalrpop_util::lalrpop_mod;
 use crate::parser::CodeFile;
 
 pub mod ast;
+mod diag;
 mod parser;
 mod runtime;
 mod stdlib;
