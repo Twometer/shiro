@@ -1,4 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
+
+use crate::diag::ShiroError;
 
 use super::{native::NativeFunctionPtr, value::ShiroValue};
 
@@ -8,6 +10,15 @@ const HEAP_DEBUG: bool = false;
 pub enum HeapValue {
     Object(HashMap<String, ShiroValue>),
     Array(Vec<ShiroValue>),
+}
+
+impl Display for HeapValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            HeapValue::Object(_) => f.write_str("object"),
+            HeapValue::Array(_) => f.write_str("array"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -21,7 +32,7 @@ impl HeapObject {
         return self.address;
     }
 
-    pub fn put(&mut self, key: ShiroValue, val: ShiroValue) {
+    pub fn put(&mut self, key: ShiroValue, val: ShiroValue) -> Result<(), ShiroError> {
         match &mut self.value {
             HeapValue::Object(map) => {
                 map.insert(key.coerce_string(), val);
@@ -33,29 +44,46 @@ impl HeapObject {
                 } else if idx == vec.len() {
                     vec.push(val);
                 } else {
-                    panic!("Array index out of range");
+                    return Err(ShiroError::GenericRuntimeError(format!(
+                        "Array index {} out of range",
+                        idx
+                    )));
                 }
             }
         }
+        Ok(())
     }
 
-    pub fn try_insert_fun(&mut self, key: &str, fun: NativeFunctionPtr) {
+    pub fn must_insert_fun(&mut self, key: &str, fun: NativeFunctionPtr) {
+        self.try_insert_fun(key, fun)
+            .expect("Failed to register native function")
+    }
+
+    pub fn try_insert_fun(&mut self, key: &str, fun: NativeFunctionPtr) -> Result<(), ShiroError> {
         self.try_insert(key, ShiroValue::NativeFunction(fun))
     }
 
-    pub fn try_insert(&mut self, key: &str, val: ShiroValue) {
+    pub fn try_insert(&mut self, key: &str, val: ShiroValue) -> Result<(), ShiroError> {
         if let HeapValue::Object(map) = &mut self.value {
             map.insert(key.to_string(), val);
+            Ok(())
         } else {
-            panic!("Cannot only put String key into object");
+            Err(ShiroError::GenericRuntimeError(format!(
+                "Cannot insert value into an `{}`",
+                &self.value
+            )))
         }
     }
 
-    pub fn try_push(&mut self, val: ShiroValue) {
+    pub fn try_push(&mut self, val: ShiroValue) -> Result<(), ShiroError> {
         if let HeapValue::Array(vec) = &mut self.value {
             vec.push(val);
+            Ok(())
         } else {
-            panic!("Can only push into array");
+            Err(ShiroError::GenericRuntimeError(format!(
+                "Cannot append value to an `{}`",
+                &self.value
+            )))
         }
     }
 
@@ -66,10 +94,12 @@ impl HeapObject {
         }
     }
 
-    pub fn keys(&self) -> Vec<String> {
+    pub fn keys(&self) -> Result<Vec<String>, ShiroError> {
         match &self.value {
-            HeapValue::Array(_) => panic!("Cannot get keys of array"),
-            HeapValue::Object(map) => map.keys().map(|k| k.to_string()).collect(),
+            HeapValue::Array(_) => Err(ShiroError::GenericRuntimeError(
+                "Cannot get keys of an array".to_string(),
+            )),
+            HeapValue::Object(map) => Ok(map.keys().map(|k| k.to_string()).collect()),
         }
     }
 

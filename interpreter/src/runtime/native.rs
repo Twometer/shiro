@@ -1,16 +1,19 @@
 use std::{collections::HashMap, rc::Rc};
 
-use crate::{ast::Expr, stdlib};
+use crate::{ast::Expr, diag::ShiroError, stdlib};
 
 use super::{
     heap::{Heap, HeapObject},
     scope::Scope,
     value::ShiroValue,
-    RunContext,
+    Runtime,
 };
 
-pub type NativeFunctionPtr =
-    fn(args: &Vec<Box<Expr>>, scope: Rc<Scope>, ctx: &mut RunContext) -> ShiroValue;
+pub type NativeFunctionPtr = fn(
+    args: &Vec<Box<Expr>>,
+    scope: Rc<Scope>,
+    ctx: &mut Runtime,
+) -> Result<ShiroValue, ShiroError>;
 
 pub type NativeLibCreator = fn(obj: &mut HeapObject);
 
