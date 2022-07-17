@@ -1,13 +1,18 @@
 import '@std/io' as io;
 import '@std/time' as time;
 
+let iterations = 10000000;
 let start = time.millis();
 
 let val = 32;
-for let i = 0; i < 10000000; i+=1 {
+for let i = 0; i < iterations; i+=1 {
     val *= 128;
 }
 
 let end = time.millis();
 
-io.println('The benchmark took ' + (end - start) + 'ms.');
+let instrs = 4 * iterations;
+let duration = (end - start);
+
+io.println('The benchmark took ' + duration + 'ms.');
+io.println('That is ' + (instrs / duration * 1000) + ' ops per second');

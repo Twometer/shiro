@@ -1,3 +1,5 @@
+use std::env;
+
 use diag::ShiroError;
 use lalrpop_util::lalrpop_mod;
 use runtime::{value::ShiroValue, Runtime};
@@ -18,11 +20,20 @@ fn run_file(rt: &mut Runtime, path: &str) -> Result<ShiroValue, ShiroError> {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        println!("shiro: No input file specified");
+        return;
+    }
+
     let mut rt = Runtime::new();
-    let result = run_file(&mut rt, "../examples/test_full.shiro");
+    let result = run_file(&mut rt, &args[1]);
 
     match result {
-        Ok(result) => println!("-> {}", result.coerce_string()),
+        Ok(result) => match result {
+            ShiroValue::Null => {}
+            _ => println!("\n{}", result.coerce_string()),
+        },
         Err(error) => rt.report_error(error),
     }
 }

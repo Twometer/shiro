@@ -1,0 +1,2 @@
+import '@std/io' as io;
+io.println('Hello, world');
