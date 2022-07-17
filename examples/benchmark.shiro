@@ -1,5 +1,5 @@
-use '@std/io' as io;
-use '@std/time' as time;
+import '@std/io' as io;
+import '@std/time' as time;
 
 let start = time.millis();
 

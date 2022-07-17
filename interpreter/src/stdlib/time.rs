@@ -7,6 +7,6 @@ pub fn lib(obj: &mut HeapObject) {
         let unix_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Get out of your time machine.");
-        ShiroValue::Integer(unix_time.as_millis() as i32)
+        ShiroValue::Integer(unix_time.as_millis() as i64)
     })
 }

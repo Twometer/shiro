@@ -1,14 +1,14 @@
-use '@std/io' as io;
+import '@std/io' as io;
 
-fun test2() {
-    fun sub() {
+func test2() {
+    func sub() {
         io.print('Sub 2 called');
     }
     sub();
 }
 
-fun test1() {
-    fun sub() {
+func test1() {
+    func sub() {
         io.print('Sub 1 called');
     }
     sub();

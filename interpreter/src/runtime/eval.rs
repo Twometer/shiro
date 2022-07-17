@@ -115,12 +115,12 @@ impl Eval for &Expr {
                 let ref_str = &ref_to_string(r, scope.clone(), ctx);
                 get_value(ref_str, scope.clone(), ctx.heap)
             }
-            Expr::Use(path, name) => {
+            Expr::Import(path, name) => {
                 let lib = load_library(path, ctx);
                 scope.put_by_str(name, lib, true);
                 ShiroValue::Null
             }
-            Expr::Op(lhs, op, rhs) => match op {
+            Expr::BinaryOp(lhs, op, rhs) => match op {
                 Opcode::Add => lhs.eval(scope.clone(), ctx) + rhs.eval(scope.clone(), ctx),
                 Opcode::Sub => lhs.eval(scope.clone(), ctx) - rhs.eval(scope.clone(), ctx),
                 Opcode::Mul => lhs.eval(scope.clone(), ctx) * rhs.eval(scope.clone(), ctx),
@@ -185,7 +185,7 @@ impl Eval for &Expr {
                     }
                 }
             }
-            Expr::Fun(name, args, body) => {
+            Expr::FunctionDecl(name, args, body) => {
                 let shiro_fun = ShiroValue::Function {
                     args: args.clone(),
                     body: body.clone(),
@@ -328,10 +328,10 @@ fn eval_tree(tree: &Vec<Box<Expr>>, ctx: &mut RunContext) -> ShiroValue {
             ShiroValue::HeapRef(array_addr) => {
                 let obj = ctx.heap.deref(*array_addr);
                 let obj = obj.borrow_mut();
-                return ShiroValue::Integer(obj.len() as i32);
+                return ShiroValue::Integer(obj.len() as i64);
             }
             ShiroValue::String(str) => {
-                return ShiroValue::Integer(str.len() as i32);
+                return ShiroValue::Integer(str.len() as i64);
             }
             _ => panic!("Cannot get length of type {}", dst.type_string()),
         }

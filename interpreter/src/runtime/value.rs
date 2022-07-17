@@ -12,8 +12,8 @@ use super::{native::NativeFunctionPtr, scope::Scope};
 #[derive(Clone)]
 pub enum ShiroValue {
     String(String),
-    Integer(i32),
-    Decimal(f32),
+    Integer(i64),
+    Decimal(f64),
     Boolean(bool),
     Char(char),
     Function {
@@ -63,10 +63,10 @@ impl std::fmt::Debug for ShiroValue {
 }
 
 impl ShiroValue {
-    pub fn coerce_integer(&self) -> i32 {
+    pub fn coerce_integer(&self) -> i64 {
         match self {
-            ShiroValue::String(s) => i32::from_str(s.as_str()).unwrap(),
-            ShiroValue::Decimal(d) => *d as i32,
+            ShiroValue::String(s) => i64::from_str(s.as_str()).unwrap(),
+            ShiroValue::Decimal(d) => *d as i64,
             ShiroValue::Integer(d) => *d,
             ShiroValue::Boolean(d) => {
                 if *d {
@@ -75,7 +75,7 @@ impl ShiroValue {
                     0
                 }
             }
-            ShiroValue::Char(c) => *c as i32,
+            ShiroValue::Char(c) => *c as i64,
             _ => 0,
         }
     }
@@ -124,12 +124,12 @@ impl ShiroValue {
         }
     }
 
-    pub fn coerce_decimal(&self) -> f32 {
+    pub fn coerce_decimal(&self) -> f64 {
         match self {
-            ShiroValue::String(s) => f32::from_str(s.as_str()).unwrap(),
+            ShiroValue::String(s) => f64::from_str(s.as_str()).unwrap(),
             ShiroValue::Decimal(d) => *d,
-            ShiroValue::Integer(d) => *d as f32,
-            ShiroValue::Char(c) => (*c as i32) as f32,
+            ShiroValue::Integer(d) => *d as f64,
+            ShiroValue::Char(c) => (*c as i32) as f64,
             ShiroValue::Boolean(d) => {
                 if *d {
                     1.0
@@ -238,7 +238,7 @@ impl PartialEq for ShiroValue {
             ShiroValue::Integer(i) => *i == other.coerce_integer(),
             ShiroValue::Boolean(b) => *b == other.coerce_boolean(),
             ShiroValue::Decimal(d) => *d == other.coerce_decimal(),
-            ShiroValue::Char(c) => *c as i32 == other.coerce_integer(),
+            ShiroValue::Char(c) => *c as i64 == other.coerce_integer(),
             // TODO: function equality
             _ => false,
         }

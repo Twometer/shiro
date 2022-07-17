@@ -1,17 +1,17 @@
-use '@std/io' as io;
+import '@std/io' as io;
 
-fun print_log(prefix, msg) {
+func print_log(prefix, msg) {
     io.println('[' + prefix + '] ' + msg);
 }
 
 return {
-    info = fun(msg) {
+    info = func(msg) {
         print_log('INFO', msg);
     },
-    warn = fun(msg) {
+    warn = func(msg) {
         print_log('WARN', msg);
     },
-    error = fun(msg) {
+    error = func(msg) {
         print_log('ERROR', msg);
     }
 };

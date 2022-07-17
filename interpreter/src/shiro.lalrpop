@@ -9,9 +9,9 @@ pub Chunk: Vec<Box<Expr>> = {
 };
 
 Stmt: Box<Expr> = {
-    "use" <lib:Str> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
-    "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(Some(name), args, b.unwrap_or(vec![]))),
-    "fun" <name:Identifier> "(" ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(Some(name), vec![], b.unwrap_or(vec![]))), 
+    "import" <lib:Str> "as" <name:Identifier> ";" => Box::new(Expr::Import(lib, name)),
+    "func" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk?> "}" => Box::new(Expr::FunctionDecl(Some(name), args, b.unwrap_or(vec![]))),
+    "func" <name:Identifier> "(" ")" "{" <b:Chunk?> "}" => Box::new(Expr::FunctionDecl(Some(name), vec![], b.unwrap_or(vec![]))), 
     "while" <e:Expr> "{" <c:Chunk?> "}" => Box::new(Expr::While(e, c.unwrap_or(vec![]))),
     "for" <i:Expr> ";" <c:Expr> ";" <a:Expr> "{" <b:Chunk?> "}" => Box::new(Expr::For(i, c, a, b.unwrap_or(vec![]))),
     "return" <retval:Expr> ";" => Box::new(Expr::Return(retval)),
@@ -22,8 +22,8 @@ Stmt: Box<Expr> = {
 
 // Expressions
 Expr: Box<Expr> = {
-    "fun" "(" <args:ArgsDef> ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(None, args, b.unwrap_or(vec![]))),
-    "fun" "(" ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(None, vec![], b.unwrap_or(vec![]))),
+    "func" "(" <args:ArgsDef> ")" "{" <b:Chunk?> "}" => Box::new(Expr::FunctionDecl(None, args, b.unwrap_or(vec![]))),
+    "func" "(" ")" "{" <b:Chunk?> "}" => Box::new(Expr::FunctionDecl(None, vec![], b.unwrap_or(vec![]))),
     "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
     <r:Reference> "+=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Add, v)),
     <r:Reference> "-=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Sub, v)),
@@ -51,7 +51,7 @@ IfBlock: Box<IfBranch> = {
 }
 
 Cmp: Box<Expr> = {
-    Cmp CmpOp Sum => Box::new(Expr::Op(<>)),
+    Cmp CmpOp Sum => Box::new(Expr::BinaryOp(<>)),
     Sum
 }
 
@@ -65,7 +65,7 @@ CmpOp: Opcode = {
 };
 
 Sum: Box<Expr> = {
-    Sum SumOp Factor => Box::new(Expr::Op(<>)),
+    Sum SumOp Factor => Box::new(Expr::BinaryOp(<>)),
     Factor,
 };
 
@@ -75,7 +75,7 @@ SumOp: Opcode = {
 };
 
 Factor: Box<Expr> = {
-    Factor FactorOp Term => Box::new(Expr::Op(<>)),
+    Factor FactorOp Term => Box::new(Expr::BinaryOp(<>)),
     Term,
 };
 
@@ -128,12 +128,12 @@ IdentifierChain: Vec<String> = {
     <i:Identifier> => vec![i],
 };
 
-Integer: i32 = {
-    r"[-]{0,1}[0-9]+" => i32::from_str(<>).unwrap(),
+Integer: i64 = {
+    r"[-]{0,1}[0-9]+" => i64::from_str(<>).unwrap(),
 };
 
-Decimal: f32 = {
-    r"[-]{0,1}[0-9]+\.[0-9]+" => f32::from_str(<>).unwrap(),
+Decimal: f64 = {
+    r"[-]{0,1}[0-9]+\.[0-9]+" => f64::from_str(<>).unwrap(),
 }
 
 Str: String = {

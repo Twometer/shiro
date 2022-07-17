@@ -1,16 +1,16 @@
-use '@std/io' as io;
+import '@std/io' as io;
 
 let y = 23;
 
 io.println('Hello from submodule');
 
 return {
-    test = fun() {
+    test = func() {
         let fi = 3;
 
-        fun x() {
-            fun y() {
-                fun z() {
+        func x() {
+            func y() {
+                func z() {
                     fi = fi + 2;
                 }
                 z();

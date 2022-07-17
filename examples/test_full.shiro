@@ -1,9 +1,9 @@
-use '@std/io' as io;
-use '@std/os' as os;
-use '@std/time' as time;
-use '@std/log' as log;
-use '../examples/test_lib' as example;
-use '../examples/function_nesting' as fnnest;
+import '@std/io' as io;
+import '@std/os' as os;
+import '@std/time' as time;
+import '@std/log' as log;
+import '../examples/test_lib' as example;
+import '../examples/function_nesting' as fnnest;
 
 log.info('Hello, world!');
 
@@ -29,12 +29,12 @@ let b = 2;
 let c = 2 * a + b;
 io.println(c);
 
-let test_fun = fun() {
+let test_fun = func() {
     a = 4;
     a;
 };
 
-fun test_fun_2() {
+func test_fun_2() {
     
 }
 
@@ -48,7 +48,7 @@ test_fun_2();
 io.println(a, b, c);
 
 for let i = 0; i < 10; i += 1 {
-    fun test() {
+    func test() {
         io.println(i);
     }
 
