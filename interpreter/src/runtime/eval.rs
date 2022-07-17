@@ -412,7 +412,7 @@ impl Runtime {
         });
         global_scope.register_native_function("dbg", |args, scope, ctx| {
             for arg in args {
-                println!("[dbg] {:?} = {:?}", arg, arg.eval(scope.clone(), ctx));
+                println!("[dbg] {:?} = {:?}", arg, arg.eval(scope.clone(), ctx)?);
             }
             Ok(ShiroValue::Null)
         });
