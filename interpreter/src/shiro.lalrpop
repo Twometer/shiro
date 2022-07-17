@@ -43,7 +43,7 @@ Reference: Reference = {
 
 IfBranches: Vec<Box<IfBranch>> = {
     "if" <e:IfBlock> => vec![e],
-    <mut v:IfBranches> "else if" <e:IfBlock> => { v.push(e); v },
+    <mut v:IfBranches> "else" "if" <e:IfBlock> => { v.push(e); v },
     <mut v:IfBranches> "else" "{" <b:Chunk?> "}" => { v.push(Box::new(IfBranch{ condition: None, body: b.unwrap_or(vec![]) })); v },
 }
 
@@ -122,20 +122,19 @@ Term: Box<Expr> = {
     <n:IdentifierChain> "(" ")" => Box::new(Expr::Invocation(n, vec![])),
     <r:IdentifierChain> "[" <i:Expr> "]" => Box::new(Expr::Reference(Reference::Indexed(r, i))),
     "(" <Expr> ")",
-    "{" "}" =>  Box::new(Expr::ShionObject(vec![])),
-    "[" "]" =>  Box::new(Expr::ShionArray(vec![])),
-    "{" <o:ShionObject> "}" => Box::new(Expr::ShionObject(o)),
-    "[" <a:Args> "]" => Box::new(Expr::ShionArray(a)),
+    "{" "}" =>  Box::new(Expr::ObjectDef(vec![])),
+    "[" "]" =>  Box::new(Expr::ArrayDef(vec![])),
+    "{" <entries:ObjectBody> "}" => Box::new(Expr::ObjectDef(entries)),
+    "[" <values:Args> "]" => Box::new(Expr::ArrayDef(values)),
 };
 
-// SHION
-ShionObject: Vec<Box<Expr>> = {
-    <e:ShionDef> => vec![e],
-    <mut v:ShionObject> "," <e:ShionDef> => { v.push(e); v },
+ObjectBody: Vec<Box<Expr>> = {
+    <mut b:ObjectBody> "," <e:ObjectEntry> => { b.push(e); b },
+    <ObjectEntry> => vec![<>],
 };
 
-ShionDef: Box<Expr> = {
-    <i:Identifier> "=" <e:Expr> => Box::new(Expr::ShionDef(i, e))
+ObjectEntry: Box<Expr> = {
+    <i:Identifier> ":" <e:Expr> => Box::new(Expr::ObjectEntry(i, e))
 };
 
 // Primitives

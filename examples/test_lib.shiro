@@ -5,7 +5,7 @@ let y = 23;
 io.println('Hello from submodule');
 
 return {
-    test = func() {
+    test: func() {
         let fi = 3;
 
         func x() {

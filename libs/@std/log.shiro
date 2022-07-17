@@ -5,13 +5,13 @@ func print_log(prefix, msg) {
 }
 
 return {
-    info = func(msg) {
+    info: func(msg) {
         print_log('INFO', msg);
     },
-    warn = func(msg) {
+    warn: func(msg) {
         print_log('WARN', msg);
     },
-    error = func(msg) {
+    error: func(msg) {
         print_log('ERROR', msg);
     }
 };

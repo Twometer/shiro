@@ -267,11 +267,11 @@ impl Eval for &Expr {
 
                 ShiroValue::Null
             }
-            Expr::ShionObject(body) => {
+            Expr::ObjectDef(body) => {
                 let obj = ctx.heap.alloc_object();
                 let mut obj = obj.borrow_mut();
                 for def in body {
-                    if let Expr::ShionDef(k, v) = def.as_ref() {
+                    if let Expr::ObjectEntry(k, v) = def.as_ref() {
                         let v = v.eval(scope.clone(), ctx);
                         obj.try_insert(k, v);
                     } else {
@@ -280,7 +280,7 @@ impl Eval for &Expr {
                 }
                 ShiroValue::HeapRef(obj.address())
             }
-            Expr::ShionArray(items) => {
+            Expr::ArrayDef(items) => {
                 let arr = ctx.heap.alloc_array();
                 let mut arr = arr.borrow_mut();
                 for itm in items {
