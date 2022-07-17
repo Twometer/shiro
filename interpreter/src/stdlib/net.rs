@@ -1,3 +1,3 @@
 use crate::runtime::heap::HeapObject;
 
-pub fn lib(obj: &mut HeapObject) {}
+pub fn lib(_obj: &mut HeapObject) {}

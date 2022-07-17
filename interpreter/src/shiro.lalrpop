@@ -10,10 +10,10 @@ pub Chunk: Vec<Box<Expr>> = {
 
 Stmt: Box<Expr> = {
     "use" <lib:Str> "as" <name:Identifier> ";" => Box::new(Expr::Use(lib, name)),
-    "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), args, b)),
-    "fun" <name:Identifier> "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(Some(name), vec![], b)), 
-    "while" <e:Expr> "{" <c:Chunk> "}" => Box::new(Expr::While(e, c)),
-    "for" <i:Expr> ";" <c:Expr> ";" <a:Expr> "{" <b:Chunk> "}" => Box::new(Expr::For(i, c, a, b)),
+    "fun" <name:Identifier> "(" <args:ArgsDef> ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(Some(name), args, b.unwrap_or(vec![]))),
+    "fun" <name:Identifier> "(" ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(Some(name), vec![], b.unwrap_or(vec![]))), 
+    "while" <e:Expr> "{" <c:Chunk?> "}" => Box::new(Expr::While(e, c.unwrap_or(vec![]))),
+    "for" <i:Expr> ";" <c:Expr> ";" <a:Expr> "{" <b:Chunk?> "}" => Box::new(Expr::For(i, c, a, b.unwrap_or(vec![]))),
     "return" <retval:Expr> ";" => Box::new(Expr::Return(retval)),
     <br:IfBranches> => Box::new(Expr::If(br)),
     ";" => Box::new(Expr::Nop),
@@ -22,8 +22,8 @@ Stmt: Box<Expr> = {
 
 // Expressions
 Expr: Box<Expr> = {
-    "fun" "(" <args:ArgsDef> ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(None, args, b)),
-    "fun" "(" ")" "{" <b:Chunk> "}" => Box::new(Expr::Fun(None, vec![], b)),
+    "fun" "(" <args:ArgsDef> ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(None, args, b.unwrap_or(vec![]))),
+    "fun" "(" ")" "{" <b:Chunk?> "}" => Box::new(Expr::Fun(None, vec![], b.unwrap_or(vec![]))),
     "let" <name:Identifier> "=" <val:Expr> => Box::new(Expr::Let(name, val)),
     <r:Reference> "+=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Add, v)),
     <r:Reference> "-=" <v:Cmp> => Box::new(Expr::AssignOp(r, AssignOpcode::Sub, v)),
@@ -43,11 +43,11 @@ Reference: Reference = {
 IfBranches: Vec<Box<IfBranch>> = {
     "if" <e:IfBlock> => vec![e],
     <mut v:IfBranches> "else if" <e:IfBlock> => { v.push(e); v },
-    <mut v:IfBranches> "else" "{" <b:Chunk> "}" => { v.push(Box::new(IfBranch{ condition: None, body: b })); v },
+    <mut v:IfBranches> "else" "{" <b:Chunk?> "}" => { v.push(Box::new(IfBranch{ condition: None, body: b.unwrap_or(vec![]) })); v },
 }
 
 IfBlock: Box<IfBranch> = {
-    <c:Expr> "{" <b:Chunk> "}" => Box::new(IfBranch{ condition:Some(c), body:b }),
+    <c:Expr> "{" <b:Chunk?> "}" => Box::new(IfBranch{ condition:Some(c), body: b.unwrap_or(vec![]) }),
 }
 
 Cmp: Box<Expr> = {

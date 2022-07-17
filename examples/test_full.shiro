@@ -35,7 +35,7 @@ let test_fun = fun() {
 };
 
 fun test_fun_2() {
-    ;
+    
 }
 
 io.println('----');

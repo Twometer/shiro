@@ -1,9 +1,8 @@
-use std::{cmp::min, fs, rc::Rc};
+use std::{cmp::min, rc::Rc};
 
 use crate::{
     ast::{AssignOpcode, Expr, Opcode, Reference},
-    parser::{self, CodeFile},
-    shiro,
+    parser::CodeFile,
 };
 
 use super::{heap::Heap, native::NativeLibProvider, scope::Scope, value::ShiroValue, RunContext};
