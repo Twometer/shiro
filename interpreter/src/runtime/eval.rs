@@ -144,6 +144,14 @@ impl Eval for &Expr {
                 Opcode::Neq => ShiroValue::Boolean(
                     lhs.eval(scope.clone(), ctx) != rhs.eval(scope.clone(), ctx),
                 ),
+                Opcode::BOr => ShiroValue::Boolean(
+                    lhs.eval(scope.clone(), ctx).coerce_boolean()
+                        || rhs.eval(scope.clone(), ctx).coerce_boolean(),
+                ),
+                Opcode::BAnd => ShiroValue::Boolean(
+                    lhs.eval(scope.clone(), ctx).coerce_boolean()
+                        && rhs.eval(scope.clone(), ctx).coerce_boolean(),
+                ),
             },
             Expr::AssignOp(lhs, op, rhs) => {
                 let ref_str = &ref_to_string(lhs, scope.clone(), ctx);

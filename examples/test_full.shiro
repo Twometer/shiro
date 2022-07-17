@@ -102,6 +102,12 @@ for let i = 0; i < len(io_keys); i += 1 {
 let str = 'asdfg';
 io.println(len(str));
 
+let a = true;
+let b = false;
+
+io.println(a || b);
+io.println(a && b);
+
 io.println('The code ran to completion in ' + (end - start) + 'ms.');
 
 1.0 + 0.5;

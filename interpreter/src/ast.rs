@@ -51,6 +51,8 @@ pub enum Opcode {
     Gte,
     Lt,
     Lte,
+    BOr,
+    BAnd,
 }
 
 #[derive(Debug, PartialEq, Clone)]
