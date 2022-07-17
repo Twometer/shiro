@@ -34,11 +34,11 @@
             "patterns": [
                 {
                     "name": "keyword.other.shiro",
-                    "match": "\\b(typeof|append|len|keys|dbg|use|as|null)\\b"
+                    "match": "\\b(typeof|append|len|keys|dbg|import|as|null)\\b"
                 },
                 {
                     "name": "keyword.control.shiro",
-                    "match": "\\b(if|else|while|for|break|return|continue|let|fun)\\b"
+                    "match": "\\b(if|else|while|for|break|return|continue|let|func)\\b"
                 },
                 {
                     "name": "keyword.operator.shiro",
