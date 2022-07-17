@@ -2,13 +2,11 @@ use std::{cmp::min, fs, rc::Rc};
 
 use crate::{
     ast::{AssignOpcode, Expr, Opcode, Reference},
+    parser::{self, CodeFile},
     shiro,
 };
 
-use super::{
-    heap::Heap, native::NativeLibProvider, preproc::preprocess_code, scope::Scope,
-    value::ShiroValue, RunContext,
-};
+use super::{heap::Heap, native::NativeLibProvider, scope::Scope, value::ShiroValue, RunContext};
 
 fn get_value(name: &Vec<ShiroValue>, scope: Rc<Scope>, heap: &mut Heap) -> ShiroValue {
     let mut val = scope.get_by_val(&name.first().expect("Invalid identifier"));
@@ -93,9 +91,8 @@ fn load_library(path: &str, ctx: &mut RunContext) -> ShiroValue {
         } else {
             format!("{}.shiro", &path)
         };
-        let code = fs::read_to_string(&full_path)
-            .expect(format!("Cannot load module '{}'", &path).as_str());
-        eval_code(&code, ctx)
+        let file = CodeFile::open(&full_path);
+        eval_file(ctx, file)
     }
 }
 
@@ -370,20 +367,22 @@ fn eval_tree(tree: &Vec<Box<Expr>>, ctx: &mut RunContext) -> ShiroValue {
     eval_block(tree, global_scope, ctx)
 }
 
-fn eval_code(code: &str, ctx: &mut RunContext) -> ShiroValue {
-    let preprocessed = preprocess_code(code);
-    match shiro::ChunkParser::new().parse(&preprocessed.as_str()) {
+fn eval_file(ctx: &mut RunContext, file: CodeFile) -> ShiroValue {
+    match ctx.parser.parse(file) {
         Ok(ast) => eval_tree(&ast, ctx),
-        Err(e) => panic!("Parser failed: {}", e),
+        Err(diag) => {
+            ctx.parser.report_diag(diag);
+            ShiroValue::Null
+        }
     }
 }
 
-pub fn eval(code: &str) -> ShiroValue {
+pub fn eval(code_file: CodeFile) -> ShiroValue {
     let mut heap = Heap::new();
     let libs = NativeLibProvider::default();
 
     let mut ctx = RunContext::new(&mut heap, &libs);
-    let result = eval_code(code, &mut ctx);
+    let result = eval_file(&mut ctx, code_file);
 
     heap.gc();
     result
